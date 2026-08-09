@@ -27,8 +27,10 @@ for (const [url, file] of shots) {
   console.log("captured", file);
 }
 
-// Report (served by the backend)
-await page.goto("http://localhost:8000/api/reports/2/download", {
+// Report: generate one for the demo CMA, then render the download URL.
+const response = await page.request.post("http://localhost:8000/api/cmas/1/report");
+const { id: reportId } = await response.json();
+await page.goto(`http://localhost:8000/api/reports/${reportId}/download`, {
   waitUntil: "networkidle",
 });
 await page.screenshot({ path: OUT + "report.png" });

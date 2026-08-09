@@ -4,6 +4,16 @@ const config: Config = {
   content: ["./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      fontFamily: {
+        sans: [
+          "var(--font-plex-sans)",
+          "IBM Plex Sans",
+          "-apple-system",
+          "BlinkMacSystemFont",
+          "Segoe UI",
+          "sans-serif",
+        ],
+      },
       colors: {
         // Single restrained accent on a neutral slate base.
         accent: {

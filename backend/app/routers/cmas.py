@@ -45,6 +45,8 @@ def _summary(cma: CMAAnalysis) -> CMASummary:
         included_count=sum(
             1 for c in cma.comparables if c.selection is not None and c.selection.included
         ),
+        strategy_count=len(cma.strategies),
+        report_count=len(cma.reports),
         latest_valuation=ValuationOut.model_validate(valuation) if valuation else None,
     )
 

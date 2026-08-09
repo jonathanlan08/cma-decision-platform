@@ -118,14 +118,38 @@ export default function ValuationPage() {
 
         {valuation && (
           <>
-            <dl className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
-              <Stat label="Low estimate" value={money(valuation.low_estimate)} />
-              <Stat
-                label="Central estimate"
-                value={money(valuation.central_estimate)}
-                sub={`calc ${valuation.calc_version}`}
-              />
-              <Stat label="High estimate" value={money(valuation.high_estimate)} />
+            <div className="overflow-hidden rounded-lg border-2 border-accent-700">
+              <dl className="grid grid-cols-1 divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+                <div className="bg-white px-4 py-4 text-center">
+                  <dt className="text-xxs font-semibold uppercase tracking-wide text-slate-500">
+                    Low estimate
+                  </dt>
+                  <dd className="mt-1 text-lg font-semibold tabular-nums text-slate-700 sm:text-xl">
+                    {money(valuation.low_estimate)}
+                  </dd>
+                </div>
+                <div className="bg-accent-50 px-4 py-4 text-center">
+                  <dt className="text-xxs font-semibold uppercase tracking-wide text-accent-800">
+                    Central estimate
+                  </dt>
+                  <dd className="mt-1 text-2xl font-bold tabular-nums text-accent-800 sm:text-3xl">
+                    {money(valuation.central_estimate)}
+                  </dd>
+                  <p className="mt-0.5 text-xxs text-slate-500">
+                    {valuation.included_count} comparable(s) · {valuation.calc_version}
+                  </p>
+                </div>
+                <div className="bg-white px-4 py-4 text-center">
+                  <dt className="text-xxs font-semibold uppercase tracking-wide text-slate-500">
+                    High estimate
+                  </dt>
+                  <dd className="mt-1 text-lg font-semibold tabular-nums text-slate-700 sm:text-xl">
+                    {money(valuation.high_estimate)}
+                  </dd>
+                </div>
+              </dl>
+            </div>
+            <dl className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-3">
               <Stat label="Median adjusted" value={money(valuation.median_adjusted)} />
               <Stat
                 label="Weighted $/sq ft"
@@ -137,9 +161,6 @@ export default function ValuationPage() {
                 sub={valuation.cov !== null ? `CV ${pct(valuation.cov, 1)}` : undefined}
               />
             </dl>
-            <p className="mt-2 text-xs text-slate-500">
-              Based on {valuation.included_count} included comparable(s).
-            </p>
 
             {(valuation.warnings ?? []).map((warning, index) => (
               <WarningBox key={index}>{warning.message}</WarningBox>

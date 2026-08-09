@@ -109,6 +109,8 @@ class CMASummary(ORMModel):
     subject_address: Optional[str] = None
     comparable_count: int = 0
     included_count: int = 0
+    strategy_count: int = 0
+    report_count: int = 0
     latest_valuation: Optional[ValuationOut] = None
 
 

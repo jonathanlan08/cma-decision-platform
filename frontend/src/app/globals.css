@@ -13,12 +13,22 @@
   :focus-visible {
     @apply outline-none ring-2 ring-accent-600 ring-offset-2 ring-offset-slate-50;
   }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }
 
 @layer components {
   .btn {
-    @apply inline-flex items-center justify-center gap-1.5 rounded-md px-3.5 py-2 text-sm
-      font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50;
+    @apply inline-flex cursor-pointer items-center justify-center gap-1.5 rounded-md px-3.5
+      py-2 text-sm font-medium transition-colors disabled:cursor-not-allowed
+      disabled:opacity-50;
   }
   .btn-primary {
     @apply btn bg-accent-700 text-white hover:bg-accent-800;

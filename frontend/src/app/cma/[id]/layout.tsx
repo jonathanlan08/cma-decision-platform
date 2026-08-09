@@ -20,6 +20,25 @@ const STEPS = [
 
 const STATUS_TONE = { draft: "amber", completed: "green", archived: "slate" } as const;
 
+// A step shows a check once the summary data proves it has produced something.
+// Adjustments completion is ambiguous from the summary, so it stays neutral.
+function isStepDone(slug: string, cma: CMADetail): boolean {
+  switch (slug) {
+    case "subject":
+      return cma.subject != null;
+    case "comparables":
+      return cma.comparable_count > 0;
+    case "valuation":
+      return cma.latest_valuation?.central_estimate != null;
+    case "strategies":
+      return cma.strategy_count > 0;
+    case "report":
+      return cma.report_count > 0;
+    default:
+      return false;
+  }
+}
+
 export default function CmaLayout({ children }: { children: React.ReactNode }) {
   const params = useParams<{ id: string }>();
   const pathname = usePathname();
@@ -67,19 +86,41 @@ export default function CmaLayout({ children }: { children: React.ReactNode }) {
         <ol className="flex min-w-max gap-1 border-b border-slate-200">
           {STEPS.map((step, index) => {
             const active = step.slug === activeStep;
+            const done = isStepDone(step.slug, cma);
             return (
               <li key={step.slug}>
                 <Link
                   href={`/cma/${cmaId}/${step.slug}`}
                   aria-current={active ? "step" : undefined}
-                  className={`inline-block border-b-2 px-3 py-2 text-sm font-medium ${
+                  className={`inline-flex items-center gap-1.5 border-b-2 px-3 py-2 text-sm font-medium transition-colors ${
                     active
                       ? "border-accent-700 text-accent-800"
                       : "border-transparent text-slate-500 hover:border-slate-300 hover:text-slate-800"
                   }`}
                 >
-                  <span className="mr-1 text-xs text-slate-400">{index + 1}</span>
+                  {done && !active ? (
+                    <span
+                      aria-hidden="true"
+                      className="flex h-4 w-4 items-center justify-center rounded-full bg-emerald-100 text-emerald-700"
+                    >
+                      <svg viewBox="0 0 12 12" className="h-2.5 w-2.5" fill="none"
+                        stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"
+                        strokeLinejoin="round">
+                        <path d="M2 6.5L4.5 9 10 3.5" />
+                      </svg>
+                    </span>
+                  ) : (
+                    <span
+                      aria-hidden="true"
+                      className={`flex h-4 w-4 items-center justify-center rounded-full text-xxs font-semibold ${
+                        active ? "bg-accent-700 text-white" : "bg-slate-200 text-slate-600"
+                      }`}
+                    >
+                      {index + 1}
+                    </span>
+                  )}
                   {step.label}
+                  {done && <span className="sr-only">(has data)</span>}
                 </Link>
               </li>
             );

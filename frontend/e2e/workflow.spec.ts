@@ -66,7 +66,7 @@ test("full CMA workflow with the bundled synthetic sample", async ({ page }) => 
   await page.getByRole("link", { name: /next: valuation/i }).click();
   await page.getByRole("button", { name: /calculate valuation/i }).click();
   await expect(page.getByText(/central estimate/i).first()).toBeVisible();
-  await expect(page.getByText(/based on 19 included/i)).toBeVisible({
+  await expect(page.getByText(/19 comparable\(s\)/i)).toBeVisible({
     timeout: 20_000,
   });
 

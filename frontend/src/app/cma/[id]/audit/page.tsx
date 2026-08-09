@@ -63,7 +63,7 @@ export default function AuditPage() {
                   {titleCase(event.event_type)}
                 </Badge>
                 <p className="min-w-[12rem] flex-1 text-sm text-slate-800">{event.summary}</p>
-                <span className="text-xxs text-slate-400">
+                <span className="text-xxs text-slate-500">
                   {event.actor} · {event.calc_version}
                 </span>
                 {event.details && (

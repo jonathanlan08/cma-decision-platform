@@ -1,6 +1,15 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import localFont from "next/font/local";
 import "./globals.css";
+
+// Self-hosted variable font (latin subset) so clean-clone builds stay offline.
+const plexSans = localFont({
+  src: "../fonts/ibm-plex-sans-latin-var.woff2",
+  display: "swap",
+  weight: "100 700",
+  variable: "--font-plex-sans",
+});
 
 export const metadata: Metadata = {
   title: "CMA Decision Platform",
@@ -10,17 +19,32 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
-      <body className="flex min-h-screen flex-col">
+    <html lang="en" className={plexSans.variable}>
+      <body className="flex min-h-screen flex-col font-sans">
         <a
           href="#main"
           className="sr-only focus:not-sr-only focus:absolute focus:left-2 focus:top-2 focus:z-50 focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:shadow"
         >
           Skip to main content
         </a>
-        <header className="border-b border-slate-200 bg-white">
+        <header className="sticky top-0 z-40 border-b border-slate-200 bg-white/95 backdrop-blur">
           <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3">
-            <Link href="/" className="flex items-baseline gap-2 no-underline">
+            <Link href="/" className="group flex items-center gap-2.5 no-underline">
+              <svg
+                aria-hidden="true"
+                viewBox="0 0 24 24"
+                className="h-7 w-7 rounded-md bg-accent-700 p-1 text-white transition-colors group-hover:bg-accent-800"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              >
+                {/* house outline over a rising bar baseline */}
+                <path d="M4 20h16" />
+                <path d="M6 20v-9l6-5 6 5v9" />
+                <path d="M10 20v-5h4v5" />
+              </svg>
               <span className="text-lg font-bold tracking-tight text-slate-900">
                 CMA <span className="text-accent-700">Decision Platform</span>
               </span>

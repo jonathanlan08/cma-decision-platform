@@ -40,6 +40,11 @@ export default function DashboardPage() {
 
   const visible = (cmas ?? []).filter((c) => showArchived || c.status !== "archived");
   const archivedCount = (cmas ?? []).filter((c) => c.status === "archived").length;
+  const counts = {
+    total: cmas?.length ?? 0,
+    draft: (cmas ?? []).filter((c) => c.status === "draft").length,
+    completed: (cmas ?? []).filter((c) => c.status === "completed").length,
+  };
 
   return (
     <div>
@@ -54,6 +59,29 @@ export default function DashboardPage() {
           {creating ? "Creating…" : "+ Create new CMA"}
         </button>
       </div>
+
+      {cmas && cmas.length > 0 && (
+        <dl className="mb-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: "Analyses", value: counts.total },
+            { label: "Drafts", value: counts.draft },
+            { label: "Completed", value: counts.completed },
+            { label: "Archived", value: archivedCount },
+          ].map((stat) => (
+            <div
+              key={stat.label}
+              className="rounded-lg border border-slate-200 bg-white px-4 py-3 shadow-sm"
+            >
+              <dt className="text-xxs font-semibold uppercase tracking-wide text-slate-500">
+                {stat.label}
+              </dt>
+              <dd className="mt-0.5 text-xl font-bold tabular-nums text-slate-900">
+                {stat.value}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      )}
 
       {error && <ErrorBox message={error} onRetry={load} />}
       {!cmas && !error && <Spinner label="Loading analyses…" />}

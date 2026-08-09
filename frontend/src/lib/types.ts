@@ -64,6 +64,8 @@ export interface CMASummary {
   subject_address: string | null;
   comparable_count: number;
   included_count: number;
+  strategy_count: number;
+  report_count: number;
   latest_valuation: Valuation | null;
 }
 
