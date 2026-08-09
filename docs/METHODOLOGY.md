@@ -8,8 +8,13 @@ adequacy warnings and the single-comparable band are based on the **effective
 count** (comparables with positive weight), not the raw included count; a pool
 adjustment is skipped when either side's pool status is unknown; every
 valuation stores an **input fingerprint** so stale results are detected and
-reports refuse to mix old outputs with new inputs. calc-v1.0 numbers are
-otherwise unchanged.
+reports refuse to mix old outputs with new inputs. Suggested adjustments
+record which assumption set produced them, so a valuation computed from
+suggestions of an older assumption set is warned about and blocks the report.
+Money inputs are bounded (±$1B for adjustments, ≤ $1B for prices) so sums
+cannot overflow, and a non-positive central estimate is warned about and
+blocks strategy generation. calc-v1.0 numbers for valid inputs are otherwise
+unchanged.
 
 This document is the authoritative description of every calculation the
 platform performs. The implementation lives in `backend/app/services/` and is
@@ -107,6 +112,11 @@ Rules:
 * Users can add manual adjustments, edit any amount (an edited suggested
   adjustment is re-flagged `manual`), or delete adjustments; each action is
   audit-logged. Re-running suggestion replaces only `suggested` rows.
+* Amounts are bounded to ±$1,000,000,000 so no sum can overflow.
+* **Provenance**: each suggestion run records the assumption set that produced
+  it. If the assumptions change afterwards, the stored suggested amounts are
+  flagged as outdated, the next valuation carries an `outdated_suggestions`
+  warning, and report generation is blocked until suggestions are regenerated.
 
 Then, per comparable:
 
@@ -166,6 +176,13 @@ version). When any of those change, the API flags the valuation `stale`, the
 UI shows an "inputs changed" warning, and report generation returns 409 until
 the valuation is recalculated and strategies are regenerated from it. Cosmetic
 fields (titles, notes, addresses) do not affect the fingerprint.
+
+Reports additionally require a complete chain (a valuation with a central
+estimate and generated strategies; 400 otherwise) and consistent provenance
+(no outdated suggestions; strategies stamped with the `valuation_id` they
+were derived from and no older than the latest valuation). A non-positive
+central estimate is reported honestly with a `nonpositive_estimate` warning
+but cannot produce strategies or a report.
 
 Also reported: unweighted median adjusted value, weighted adjusted $/sq ft
 (over comps with valid sq ft, renormalized), included count, and per-comparable

@@ -155,10 +155,11 @@ class ComparableIn(BaseModel):
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     # None = unknown; the value is then skipped in scoring/adjustments.
     property_type: Optional[str] = None
-    sale_price: float = Field(gt=0, allow_inf_nan=False)
+    sale_price: float = Field(gt=0, le=1_000_000_000, allow_inf_nan=False)
     sale_date: date
-    square_feet: float = Field(gt=0, allow_inf_nan=False)
-    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    square_feet: float = Field(gt=0, le=1_000_000, allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, le=100_000_000,
+                                      allow_inf_nan=False)
     bedrooms: int = Field(ge=0, le=50)
     bathrooms: float = Field(ge=0, le=50, allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
@@ -199,10 +200,13 @@ class ComparableUpdate(BaseModel):
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     property_type: Optional[str] = None
-    sale_price: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    sale_price: Optional[float] = Field(default=None, gt=0, le=1_000_000_000,
+                                        allow_inf_nan=False)
     sale_date: Optional[date] = None
-    square_feet: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
-    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    square_feet: Optional[float] = Field(default=None, gt=0, le=1_000_000,
+                                         allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, le=100_000_000,
+                                      allow_inf_nan=False)
     bedrooms: Optional[int] = Field(default=None, ge=0, le=50)
     bathrooms: Optional[float] = Field(default=None, ge=0, le=50, allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
@@ -317,7 +321,8 @@ class CSVImportResult(BaseModel):
 
 class AdjustmentIn(BaseModel):
     category: str = Field(min_length=1, max_length=50)
-    amount: float = Field(allow_inf_nan=False)
+    # Bounded so sums cannot overflow into inf/NaN downstream.
+    amount: float = Field(ge=-1_000_000_000, le=1_000_000_000, allow_inf_nan=False)
     subject_value: Optional[str] = Field(default=None, max_length=100)
     comparable_value: Optional[str] = Field(default=None, max_length=100)
     unit_description: Optional[str] = Field(default=None, max_length=255)
@@ -325,7 +330,8 @@ class AdjustmentIn(BaseModel):
 
 
 class AdjustmentUpdate(BaseModel):
-    amount: Optional[float] = Field(default=None, allow_inf_nan=False)
+    amount: Optional[float] = Field(default=None, ge=-1_000_000_000,
+                                    le=1_000_000_000, allow_inf_nan=False)
     explanation: Optional[str] = None
 
     @field_validator("amount", mode="before")
@@ -342,6 +348,9 @@ class ConfigOut(ORMModel):
     assumptions: Dict[str, float]
     reconciliation: Dict[str, float]
     updated_at: datetime
+    # Set by the API layer: True when stored suggested adjustments were
+    # generated from an assumption set that has since changed.
+    suggestions_outdated: Optional[bool] = None
 
 
 def _check_config_dict(v: Dict[str, float], allowed, label: str) -> None:
@@ -461,12 +470,14 @@ class StrategyOut(ORMModel):
     name: str
     list_price: float
     is_user_modified: bool
+    # The valuation these derived metrics were computed against (provenance).
+    valuation_id: Optional[int] = None
     derived: Dict[str, Any]
     updated_at: datetime
 
 
 class StrategyUpdate(BaseModel):
-    list_price: float = Field(gt=0, allow_inf_nan=False)
+    list_price: float = Field(gt=0, le=1_000_000_000, allow_inf_nan=False)
 
 
 # --- Audit / reports / meta --------------------------------------------------

@@ -90,6 +90,7 @@ Same physical fields as the subject, plus:
 | similarity_params | JSON | curve caps (max distance, tolerances, …) |
 | assumptions | JSON | dollar assumptions for suggested adjustments |
 | reconciliation | JSON | range_k, warning thresholds |
+| suggestions_assumptions | JSON? | assumption snapshot from the last suggestion run; mismatch with `assumptions` = outdated suggestions |
 
 ## valuation_results (append-only history)
 
@@ -112,8 +113,9 @@ Same physical fields as the subject, plus:
 | Field | Type | Notes |
 |---|---|---|
 | key | str | `market_entry` \| `competitive` \| `aspirational` |
-| list_price | float | editable |
+| list_price | float | editable, > 0, ≤ $1B |
 | is_user_modified | bool | preserved across regeneration |
+| valuation_id | int? | FK: the valuation the derived metrics were computed against |
 | derived | JSON | pct/dollar vs value, position percentile, interest, risk, notes, caveat |
 
 ## audit_events (append-only)
@@ -141,7 +143,7 @@ Same physical fields as the subject, plus:
 
 Header names must match exactly (case-insensitive). Required:
 `address, sale_price, sale_date, square_feet, bedrooms, bathrooms`.
-Validation per row: price > 0 and finite (NaN/Infinity rejected); date
+Validation per row: price > 0, ≤ $1B, and finite (NaN/Infinity rejected); date
 `YYYY-MM-DD` or `MM/DD/YYYY`, not future; sq ft > 0; bedrooms whole ≥ 0;
 bathrooms ≥ 0; lat ∈ [−90, 90]; lon ∈ [−180, 180]; year_built ∈ [1800, next
 year]; condition/property_type from their enums; pool ∈

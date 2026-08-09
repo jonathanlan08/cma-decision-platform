@@ -84,6 +84,8 @@ export default function ComparablesPage() {
                     ...values,
                     city: values.city || null,
                     zip_code: values.zip_code || null,
+                    // "" = not specified; stored as unknown, never guessed.
+                    property_type: values.property_type || null,
                     notes: values.notes || null,
                     source: "manual-entry",
                   });
@@ -156,6 +158,7 @@ export default function ComparablesPage() {
                 replaceComp(
                   await api.updateSelection(comp.id, { user_weight_multiplier: value }),
                 );
+                reload(); // refresh the header's staleness flag
               })
             }
             onDelete={(comp) =>
@@ -187,6 +190,7 @@ export default function ComparablesPage() {
                 if (comparables && comparables.length > 0 && cma.subject) {
                   setComparables(await api.recalcSimilarity(cma.id));
                 }
+                reload(); // refresh the header's staleness flag
               }).finally(() => setSavingWeights(false));
             }}
           />

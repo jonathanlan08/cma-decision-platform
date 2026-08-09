@@ -38,7 +38,8 @@ def template_csv() -> str:
 
 def _parse_float(value: str, field: str, errors: List[Dict], row: int,
                  minimum: Optional[float] = None, required: bool = False,
-                 strictly_positive: bool = False) -> Optional[float]:
+                 strictly_positive: bool = False,
+                 maximum: Optional[float] = None) -> Optional[float]:
     value = (value or "").strip().replace("$", "").replace(",", "")
     if value == "":
         if required:
@@ -62,6 +63,10 @@ def _parse_float(value: str, field: str, errors: List[Dict], row: int,
     if minimum is not None and parsed < minimum:
         errors.append({"row": row, "field": field,
                        "message": "%s must be at least %s" % (field, minimum)})
+        return None
+    if maximum is not None and parsed > maximum:
+        errors.append({"row": row, "field": field,
+                       "message": "%s must be at most %s" % (field, format(int(maximum), ","))})
         return None
     return parsed
 
@@ -141,10 +146,12 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
             row_errors.append({"row": idx, "field": "address", "message": "address is required"})
 
         sale_price = _parse_float(row.get("sale_price", ""), "sale_price", row_errors, idx,
-                                  required=True, strictly_positive=True)
+                                  required=True, strictly_positive=True,
+                                  maximum=1_000_000_000)
         sale_date = _parse_date(row.get("sale_date", ""), "sale_date", row_errors, idx)
         square_feet = _parse_float(row.get("square_feet", ""), "square_feet", row_errors, idx,
-                                   required=True, strictly_positive=True)
+                                   required=True, strictly_positive=True,
+                                   maximum=1_000_000)
         bedrooms = _parse_int(row.get("bedrooms", ""), "bedrooms", row_errors, idx,
                               minimum=0, required=True)
         bathrooms = _parse_float(row.get("bathrooms", ""), "bathrooms", row_errors, idx,
@@ -161,7 +168,8 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
                                "message": "longitude must be between -180 and 180"})
             longitude = None
 
-        lot_size = _parse_float(row.get("lot_size", ""), "lot_size", row_errors, idx, minimum=0)
+        lot_size = _parse_float(row.get("lot_size", ""), "lot_size", row_errors, idx,
+                                minimum=0, maximum=100_000_000)
         year_built = _parse_int(row.get("year_built", ""), "year_built", row_errors, idx)
         if year_built is not None and not 1800 <= year_built <= date.today().year + 1:
             row_errors.append({"row": idx, "field": "year_built",

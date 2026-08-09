@@ -32,6 +32,7 @@ from .helpers import (
     get_cma_or_404,
     get_comparable_or_404,
     refresh_similarity,
+    suggestions_outdated,
     touch,
     valuation_out,
 )
@@ -49,6 +50,9 @@ def suggest_all_adjustments(cma_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400,
                             detail="Enter the subject property before suggesting adjustments")
     config = ensure_config(db, cma)
+    # Record which assumption set produced these suggestions so outdated
+    # suggested amounts can be detected later.
+    config.suggestions_assumptions = dict(config.assumptions)
     total = 0
     for comp in cma.comparables:
         removed = [a for a in comp.adjustments if a.source == "suggested"]
@@ -202,6 +206,16 @@ def recalculate_valuation(cma_id: int, db: Session = Depends(get_db)):
         })
 
     result = reconcile(items, config.reconciliation)
+    # Provenance check: suggested amounts are derived from assumptions, so a
+    # valuation computed from suggestions of an OLDER assumption set is
+    # internally inconsistent even though its own inputs are current.
+    if suggestions_outdated(cma, config):
+        result["warnings"].append({
+            "code": "outdated_suggestions",
+            "message": "The suggested adjustments were generated from an earlier "
+            "assumption set. Regenerate suggested adjustments so this valuation "
+            "reflects the current assumptions.",
+        })
     valuation = ValuationResult(
         cma_id=cma.id,
         calc_version=CALC_VERSION,

@@ -21,9 +21,16 @@ from .helpers import (
     ensure_config,
     get_cma_or_404,
     latest_valuation,
+    suggestions_outdated,
     touch,
     valuation_out,
 )
+
+
+def _config_out(cma: CMAAnalysis, config) -> ConfigOut:
+    out = ConfigOut.model_validate(config)
+    out.suggestions_outdated = suggestions_outdated(cma, config)
+    return out
 
 router = APIRouter(prefix="/api/cmas", tags=["CMA analyses"])
 
@@ -141,7 +148,7 @@ def get_config(cma_id: int, db: Session = Depends(get_db)):
     cma = get_cma_or_404(db, cma_id)
     config = ensure_config(db, cma)
     db.commit()
-    return ConfigOut.model_validate(config)
+    return _config_out(cma, config)
 
 
 @router.put("/{cma_id}/config", response_model=ConfigOut)
@@ -176,4 +183,4 @@ def update_config(cma_id: int, payload: ConfigUpdate, db: Session = Depends(get_
     touch(cma)
     db.commit()
     db.refresh(config)
-    return ConfigOut.model_validate(config)
+    return _config_out(cma, config)

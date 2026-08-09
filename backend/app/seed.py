@@ -82,6 +82,9 @@ def seed() -> None:
                   actor="seed-script")
 
         total = 0
+        # Record the assumption snapshot exactly like the API endpoint does,
+        # so the seeded suggestions have known provenance.
+        config.suggestions_assumptions = dict(config.assumptions)
         for comp in cma.comparables:
             for spec in suggest_adjustments(cma.subject, comp, config.assumptions):
                 db.add(Adjustment(comparable_id=comp.id, source="suggested", **spec))

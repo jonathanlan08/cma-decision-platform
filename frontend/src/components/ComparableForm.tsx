@@ -17,6 +17,7 @@ export interface ComparableFormValues {
   address: string;
   city: string;
   zip_code: string;
+  // "" = not specified; sent to the API as null (unknown, never guessed).
   property_type: string;
   sale_price: number | null;
   sale_date: string;
@@ -27,7 +28,8 @@ export interface ComparableFormValues {
   year_built: number | null;
   condition: string | null;
   parking_spaces: number | null;
-  has_pool: boolean;
+  // null = unknown; only an explicit yes/no choice produces a boolean.
+  has_pool: boolean | null;
   distance_from_subject: number | null;
   notes: string;
 }
@@ -36,7 +38,7 @@ const EMPTY: ComparableFormValues = {
   address: "",
   city: "",
   zip_code: "",
-  property_type: "single_family",
+  property_type: "",
   sale_price: null,
   sale_date: "",
   square_feet: null,
@@ -46,7 +48,7 @@ const EMPTY: ComparableFormValues = {
   year_built: null,
   condition: null,
   parking_spaces: null,
-  has_pool: false,
+  has_pool: null,
   distance_from_subject: null,
   notes: "",
 };
@@ -163,6 +165,7 @@ export function ComparableForm({
         <Field id="comp-property_type" label="Property type">
           <select {...props("property_type")} value={values.property_type}
             onChange={(e) => set("property_type", e.target.value)}>
+            <option value="">Not specified</option>
             {PROPERTY_TYPES.map((t) => (
               <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
             ))}
@@ -178,13 +181,19 @@ export function ComparableForm({
             value={values.distance_from_subject ?? ""}
             onChange={(e) => set("distance_from_subject", numeric(e.target.value))} />
         </Field>
-        <div className="flex items-end pb-2">
-          <label htmlFor="comp-has_pool" className="flex items-center gap-2 text-sm">
-            <input id="comp-has_pool" type="checkbox" className="h-4 w-4 rounded border-slate-300"
-              checked={values.has_pool} onChange={(e) => set("has_pool", e.target.checked)} />
-            Has pool
-          </label>
-        </div>
+        <Field id="comp-has_pool" label="Pool">
+          <select
+            {...props("has_pool")}
+            value={values.has_pool === null ? "" : String(values.has_pool)}
+            onChange={(e) =>
+              set("has_pool", e.target.value === "" ? null : e.target.value === "true")
+            }
+          >
+            <option value="">Not specified</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </Field>
         <div className="sm:col-span-2 lg:col-span-4">
           <Field id="comp-notes" label="Notes">
             <input {...props("notes")} type="text" value={values.notes}

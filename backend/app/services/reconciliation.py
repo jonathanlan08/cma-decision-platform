@@ -106,6 +106,15 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
 
     values = [item["adjusted_price"] for item in items]
     central = sum(w * v for w, v in zip(norm_weights, values))
+    if central <= 0:
+        # Mathematically possible with extreme downward adjustments; the
+        # number is reported honestly but is not a usable estimate.
+        warnings.append({
+            "code": "nonpositive_estimate",
+            "message": "The adjusted values produce a non-positive central "
+            "estimate. Review the adjustments; strategies and reports are "
+            "unavailable until the estimate is positive.",
+        })
 
     # Weighted dispersion
     dispersion: Optional[float] = None

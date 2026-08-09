@@ -117,6 +117,22 @@ def valuation_staleness(cma: CMAAnalysis, valuation) -> Optional[bool]:
     return valuation.input_fingerprint != valuation_fingerprint(cma, cma.weight_config)
 
 
+def suggestions_outdated(cma: CMAAnalysis, config) -> Optional[bool]:
+    """True when stored suggested adjustments were generated from an assumption
+    set that has since changed. Suggested amounts are DERIVED from assumptions,
+    so a mismatch means the derivation chain is broken even if the valuation's
+    own fingerprint is current. None when unknown (no snapshot recorded)."""
+    has_suggested = any(
+        adj.source == "suggested"
+        for comp in cma.comparables for adj in comp.adjustments
+    )
+    if not has_suggested:
+        return False
+    if config is None or config.suggestions_assumptions is None:
+        return None
+    return config.suggestions_assumptions != config.assumptions
+
+
 def valuation_out(cma: CMAAnalysis, valuation) -> ValuationOut:
     """ValuationOut with the staleness flag stamped by the API layer."""
     out = ValuationOut.model_validate(valuation)

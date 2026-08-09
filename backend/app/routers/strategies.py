@@ -33,9 +33,13 @@ def generate_strategies(cma_id: int, db: Session = Depends(get_db)):
     the new central estimate."""
     cma = get_cma_or_404(db, cma_id)
     valuation = latest_valuation(cma)
-    if valuation is None or not valuation.central_estimate:
+    # An explicit <= 0 check: a negative central would produce negative list
+    # prices (a falsy check alone would let negatives through).
+    if valuation is None or valuation.central_estimate is None \
+            or valuation.central_estimate <= 0:
         raise HTTPException(status_code=400,
-                            detail="Calculate a valuation before generating strategies")
+                            detail="Calculate a valuation with a positive central "
+                            "estimate before generating strategies")
     central = valuation.central_estimate
     comp_values = _included_adjusted_values(valuation)
     existing = {s.key: s for s in cma.strategies}
@@ -44,15 +48,18 @@ def generate_strategies(cma_id: int, db: Session = Depends(get_db)):
         current = existing.get(spec["key"])
         if current is None:
             db.add(ListingStrategy(cma_id=cma.id, key=spec["key"], name=spec["name"],
-                                   list_price=spec["list_price"], derived=spec["derived"]))
+                                   list_price=spec["list_price"], derived=spec["derived"],
+                                   valuation_id=valuation.id))
         elif current.is_user_modified:
             derived = derive_metrics(current.list_price, central, comp_values)
             derived["description"] = spec["derived"].get("description")
             current.derived = derived
+            current.valuation_id = valuation.id
             current.updated_at = utcnow()
         else:
             current.list_price = spec["list_price"]
             current.derived = spec["derived"]
+            current.valuation_id = valuation.id
             # Force the timestamp forward even when the regenerated values are
             # identical: the report gate compares it to the valuation's
             # created_at to prove the strategies match the current valuation.
@@ -77,11 +84,13 @@ def update_strategy(strategy_id: int, payload: StrategyUpdate, db: Session = Dep
         raise HTTPException(status_code=404, detail="Strategy not found")
     cma = strategy.cma
     valuation = latest_valuation(cma)
-    if valuation is None or not valuation.central_estimate:
-        raise HTTPException(status_code=400, detail="No valuation available")
+    if valuation is None or valuation.central_estimate is None \
+            or valuation.central_estimate <= 0:
+        raise HTTPException(status_code=400, detail="No positive valuation available")
     old_price = strategy.list_price
     strategy.list_price = payload.list_price
     strategy.is_user_modified = True
+    strategy.valuation_id = valuation.id
     description = strategy.derived.get("description") if strategy.derived else None
     derived = derive_metrics(payload.list_price, valuation.central_estimate,
                              _included_adjusted_values(valuation))

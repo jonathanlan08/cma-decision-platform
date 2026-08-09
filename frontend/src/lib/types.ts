@@ -172,6 +172,8 @@ export interface Strategy {
   name: string;
   list_price: number;
   is_user_modified: boolean;
+  // The valuation these derived metrics were computed against (provenance).
+  valuation_id: number | null;
   derived: StrategyDerived;
   updated_at: string;
 }
@@ -212,6 +214,9 @@ export interface Config {
   assumptions: Record<string, number>;
   reconciliation: Record<string, number>;
   updated_at: string;
+  // True when stored suggested adjustments were generated from an assumption
+  // set that has since changed; null when unknown.
+  suggestions_outdated: boolean | null;
 }
 
 export interface Report {
