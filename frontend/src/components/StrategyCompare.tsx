@@ -24,8 +24,10 @@ export function StrategyCompare({
   function commit(strategy: Strategy) {
     const raw = drafts[strategy.id];
     if (raw === undefined) return;
-    const value = Number(raw);
-    if (!Number.isNaN(value) && value > 0 && value !== strategy.list_price) {
+    // Accept "$" and thousands separators so pasted prices work too.
+    const value = Number(raw.replace(/[$,\s]/g, ""));
+    if (!Number.isNaN(value) && Number.isFinite(value) && value > 0
+        && value !== strategy.list_price) {
       onPriceChange(strategy, value);
     }
     setDrafts((d) => {
@@ -53,25 +55,32 @@ export function StrategyCompare({
           <label htmlFor={`price-${strategy.id}`} className="field-label">
             Proposed list price
           </label>
-          <input
-            id={`price-${strategy.id}`}
-            type="number"
-            min={1}
-            step={1000}
-            className="field-input text-lg font-semibold tabular-nums"
-            value={drafts[strategy.id] ?? String(strategy.list_price)}
-            disabled={busyId === strategy.id}
-            onChange={(e) => setDrafts((d) => ({ ...d, [strategy.id]: e.target.value }))}
-            onBlur={() => commit(strategy)}
-            onKeyDown={(e) => {
-              // Commit directly; routing Enter through blur() is fragile in
-              // some embedded webviews.
-              if (e.key === "Enter") {
-                e.preventDefault();
-                commit(strategy);
-              }
-            }}
-          />
+          <div className="relative">
+            <span
+              aria-hidden="true"
+              className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-slate-500"
+            >
+              $
+            </span>
+            <input
+              id={`price-${strategy.id}`}
+              type="text"
+              inputMode="numeric"
+              className="field-input pl-7 text-lg font-semibold tabular-nums"
+              value={drafts[strategy.id] ?? strategy.list_price.toLocaleString("en-US")}
+              disabled={busyId === strategy.id}
+              onChange={(e) => setDrafts((d) => ({ ...d, [strategy.id]: e.target.value }))}
+              onBlur={() => commit(strategy)}
+              onKeyDown={(e) => {
+                // Commit directly; routing Enter through blur() is fragile in
+                // some embedded webviews.
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  commit(strategy);
+                }
+              }}
+            />
+          </div>
 
           <dl className="mt-3 space-y-2 text-sm">
             <div className="flex justify-between">
