@@ -94,7 +94,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Recharts |
 | Backend | FastAPI, Pydantic v2, SQLAlchemy 2, Alembic |
 | Database | SQLite by default; PostgreSQL 16 via `docker-compose` |
-| Testing | pytest (117 tests) · Vitest + React Testing Library (35) · Playwright e2e (2 journeys × 2 engines) |
+| Testing | pytest (121 tests) · Vitest + React Testing Library (36) · Playwright e2e (2 journeys × 2 engines) |
 | Quality | Ruff, ESLint, TypeScript strict, GitHub Actions CI |
 | Reports | Jinja2 → print-ready HTML (→ PDF when WeasyPrint is installed) |
 

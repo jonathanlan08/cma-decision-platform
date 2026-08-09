@@ -33,7 +33,7 @@ flowchart TB
 | `models.py` | Schema + trivial derived properties | Business logic |
 | Frontend components | Render props, local UI state | Compute valuation numbers (display-only math like column sums is allowed) |
 
-This is what makes the test suite meaningful: the 117 backend tests hit the
+This is what makes the test suite meaningful: the 121 backend tests hit the
 formulas directly, and the API tests only need to verify orchestration.
 
 ## Data flow for one valuation
@@ -96,7 +96,7 @@ backend/
   app/routers/          HTTP surface + audit logging
   app/templates/        Report template (Jinja2)
   alembic/              Migrations
-  tests/                117 tests incl. full workflow via TestClient
+  tests/                121 tests incl. full workflow via TestClient
 frontend/
   src/lib/              types.ts (API mirror), api.ts (typed client), format.ts
   src/components/       Presentational, prop-driven (tested with RTL)
