@@ -423,3 +423,31 @@ def test_subject_unknowns_never_guessed(client):
     subject = response.json()
     assert subject["property_type"] is None
     assert subject["has_pool"] is None
+
+
+def test_fingerprints_are_numeric_type_stable():
+    """1850 (int) and 1850.0 (float) are the same value; SQLite/JSON
+    round-trips must not flip staleness flags."""
+    from app.services.fingerprint import suggestions_fingerprint
+
+    class _FakeCma:
+        def __init__(self, subject):
+            self.subject = subject
+            self.comparables = []
+
+    ints = _FakeCma(_Prop(square_feet=1850, lot_size=7200, bathrooms=2))
+    floats = _FakeCma(_Prop(square_feet=1850.0, lot_size=7200.0, bathrooms=2.0))
+    assert (suggestions_fingerprint(ints, {"gla_per_sqft": 150})
+            == suggestions_fingerprint(floats, {"gla_per_sqft": 150.0}))
+    # Booleans survive normalization as booleans, not as 1.0/0.0.
+    from app.services.fingerprint import _normalize
+    assert _normalize(True) is True
+    assert _normalize(1) == 1.0 and _normalize(1) is not True
+
+
+def test_seeded_demo_has_clean_provenance(client):
+    """The seed path assigns int literals to float columns; its stored
+    fingerprint must still match the post-persistence state."""
+    cma_id = _prepare_valued_cma(client)
+    assert client.get("/api/cmas/%d/config" % cma_id).json()[
+        "suggestions_outdated"] is False

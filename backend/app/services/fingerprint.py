@@ -39,11 +39,25 @@ SUGGESTION_SUBJECT_FIELDS = [
 SUGGESTION_COMPARABLE_FIELDS = SUGGESTION_SUBJECT_FIELDS + ["sale_price", "sale_date"]
 
 
-def _value(obj: Any, field: str):
-    value = getattr(obj, field, None)
+def _normalize(value: Any):
+    """Make fingerprint leaves type-stable. SQLite/JSON round-trips can turn
+    1850 into 1850.0 (and back); without normalization the same VALUE hashes
+    differently before and after persistence, producing false staleness."""
+    if isinstance(value, bool):  # bool is an int subclass; keep it a bool
+        return value
+    if isinstance(value, (int, float)):
+        return float(value)
     if isinstance(value, date):
         return value.isoformat()
     return value
+
+
+def _normalize_dict(d: Any):
+    return {k: _normalize(v) for k, v in d.items()} if d is not None else None
+
+
+def _value(obj: Any, field: str):
+    return _normalize(getattr(obj, field, None))
 
 
 def valuation_fingerprint(cma: Any, config: Optional[Any]) -> str:
@@ -68,10 +82,10 @@ def valuation_fingerprint(cma: Any, config: Optional[Any]) -> str:
             if cma.subject is not None else None
         ),
         "comparables": comparables,
-        "weights": dict(config.weights) if config else None,
-        "similarity_params": dict(config.similarity_params) if config else None,
-        "assumptions": dict(config.assumptions) if config else None,
-        "reconciliation": dict(config.reconciliation) if config else None,
+        "weights": _normalize_dict(config.weights) if config else None,
+        "similarity_params": _normalize_dict(config.similarity_params) if config else None,
+        "assumptions": _normalize_dict(config.assumptions) if config else None,
+        "reconciliation": _normalize_dict(config.reconciliation) if config else None,
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
@@ -84,7 +98,7 @@ def suggestions_fingerprint(cma: Any, assumptions: Any) -> str:
     means the stored suggested amounts no longer follow from the data on
     screen (e.g. the subject's square footage changed)."""
     payload = {
-        "assumptions": dict(assumptions),
+        "assumptions": _normalize_dict(assumptions),
         "subject": (
             {f: _value(cma.subject, f) for f in SUGGESTION_SUBJECT_FIELDS}
             if cma.subject is not None else None

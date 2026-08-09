@@ -239,8 +239,10 @@ Required columns: `address`, `sale_price`, `sale_date` (YYYY-MM-DD),
 ## Roadmap
 
 See [docs/ROADMAP.md](docs/ROADMAP.md). Next up: paired-sales analysis to
-*derive* adjustment suggestions from the comp set itself, a real map view, and
-authentication for multi-user deployments.
+*derive* adjustment suggestions from the comp set itself, a real map view,
+authentication for multi-user deployments, and a hosted read-only demo with
+the synthetic dataset (blocked on adding authentication and rate limiting
+first).
 
 ## Contributing
 
