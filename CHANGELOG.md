@@ -2,6 +2,30 @@
 
 ## Unreleased
 
+- **Provenance and completeness hardening** (2026-08-09):
+  - Suggested adjustments record the assumption set that produced them.
+    Changing assumptions without regenerating flags the config
+    (`suggestions_outdated`), adds an `outdated_suggestions` warning to any
+    valuation computed from them, shows a banner on the adjustments screen,
+    and blocks report generation (409) until suggestions are regenerated.
+  - Reports now require a complete chain: no valuation or no strategies
+    returns 400 instead of producing a seller-facing document with empty
+    sections; the Generate button explains what is missing.
+  - Hard input bounds: adjustment amounts ±$1B, sale/list prices ≤ $1B,
+    living area ≤ 1M sq ft, lot ≤ 100M sq ft (API and CSV), so extreme but
+    "valid" numbers can no longer overflow into Infinity. A non-positive
+    central estimate gets a `nonpositive_estimate` warning and blocks
+    strategy generation (previously a negative central could generate
+    negative list prices).
+  - Manual comparable entry no longer guesses: property type and pool
+    default to "Not specified" (stored as unknown) instead of
+    single-family/no-pool.
+  - Freshness now updates onscreen immediately: weight, multiplier, and
+    adjustment changes refresh the header staleness flag without a reload,
+    and each strategy records the `valuation_id` it was derived from
+    (shown on the strategy cards).
+  - 6 new backend regression tests (112 pytest total); fixtures updated.
+
 - **Integrity hardening (calc-v1.1)** (2026-08-08):
   - Staleness detection: every valuation stores a SHA-256 fingerprint of its
     inputs; the API flags stale valuations, the UI shows "inputs changed"

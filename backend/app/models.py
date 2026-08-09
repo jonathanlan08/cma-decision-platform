@@ -180,6 +180,11 @@ class WeightConfiguration(Base):
     similarity_params: Mapped[dict] = mapped_column(JSON)
     assumptions: Mapped[dict] = mapped_column(JSON)
     reconciliation: Mapped[dict] = mapped_column(JSON)
+    # Snapshot of `assumptions` taken when suggested adjustments were last
+    # generated. A mismatch with the current assumptions means the stored
+    # suggested amounts are outdated (provenance check; null = never generated
+    # or pre-dates this column).
+    suggestions_assumptions: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
     cma: Mapped["CMAAnalysis"] = relationship(back_populates="weight_config")
@@ -220,6 +225,10 @@ class ListingStrategy(Base):
     name: Mapped[str] = mapped_column(String(50))
     list_price: Mapped[float] = mapped_column(Float)
     is_user_modified: Mapped[bool] = mapped_column(Boolean, default=False)
+    # The valuation this strategy's derived metrics were computed against.
+    valuation_id: Mapped[Optional[int]] = mapped_column(
+        ForeignKey("valuation_results.id"), nullable=True
+    )
     derived: Mapped[dict] = mapped_column(JSON)  # pct_vs_value, position, interest, risk, notes
     created_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)

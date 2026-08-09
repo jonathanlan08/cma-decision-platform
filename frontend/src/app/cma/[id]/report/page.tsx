@@ -42,6 +42,13 @@ export default function ReportPage() {
     }
   }
 
+  // A seller-facing report needs the complete chain; the backend enforces
+  // this too, so the disabled state just explains it earlier.
+  const missing: string[] = [];
+  if (!cma.subject) missing.push("subject property");
+  if (cma.latest_valuation?.central_estimate == null) missing.push("valuation");
+  if (cma.strategy_count === 0) missing.push("listing strategies");
+
   return (
     <Card
       title="Seller-facing CMA report"
@@ -50,7 +57,7 @@ export default function ReportPage() {
           type="button"
           className="btn-primary"
           onClick={generate}
-          disabled={generating || !cma.subject}
+          disabled={generating || missing.length > 0}
         >
           {generating ? "Generating…" : "Generate report"}
         </button>
@@ -63,8 +70,10 @@ export default function ReportPage() {
         installed the download is a PDF; otherwise it opens as print-optimized HTML, so use
         your browser&apos;s “Print → Save as PDF”.
       </p>
-      {!cma.subject && (
-        <p className="text-sm text-amber-800">Enter the subject property first.</p>
+      {missing.length > 0 && (
+        <p className="mb-2 text-sm text-amber-800">
+          A report needs the full analysis. Still missing: {missing.join(", ")}.
+        </p>
       )}
       <StaleBanner cma={cma} />
       {error && <ErrorBox message={error} onRetry={load} />}

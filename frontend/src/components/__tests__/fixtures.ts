@@ -62,6 +62,7 @@ export function makeStrategy(overrides: Partial<Strategy> = {}): Strategy {
     name: "Competitive",
     list_price: 1000000,
     is_user_modified: false,
+    valuation_id: 1,
     derived: {
       pct_vs_value: 0,
       dollar_vs_value: 0,

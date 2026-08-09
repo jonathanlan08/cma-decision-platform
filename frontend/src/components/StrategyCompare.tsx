@@ -111,7 +111,9 @@ export function StrategyCompare({
           )}
           <p className="mt-2 text-xs text-slate-500">{strategy.derived.marketing_notes}</p>
           <p className="mt-2 border-t border-slate-100 pt-2 text-xxs text-slate-500">
-            Scenario estimate vs. central {money(centralEstimate)}. {strategy.derived.assumptions}
+            Scenario estimate vs. central {money(centralEstimate)}
+            {strategy.valuation_id !== null && ` (valuation #${strategy.valuation_id})`}.{" "}
+            {strategy.derived.assumptions}
           </p>
         </article>
       ))}

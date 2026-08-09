@@ -26,6 +26,7 @@ from .helpers import (
     ensure_config,
     get_cma_or_404,
     latest_valuation,
+    suggestions_outdated,
     touch,
     valuation_staleness,
 )
@@ -108,23 +109,42 @@ def generate_report(cma_id: int, db: Session = Depends(get_db)):
     config = ensure_config(db, cma)
     valuation = latest_valuation(cma)
 
+    # Completeness gate: a seller-facing report needs the full chain, not a
+    # subject page with empty sections.
+    if valuation is None or valuation.central_estimate is None:
+        raise HTTPException(
+            status_code=400,
+            detail="Calculate a valuation before generating a report.",
+        )
+    if not cma.strategies:
+        raise HTTPException(
+            status_code=400,
+            detail="Generate listing strategies before generating a report.",
+        )
+
     # Consistency gate: a seller-facing report must come from one coherent
     # state. Stale outputs are rejected instead of silently mixed with
     # current inputs.
-    if valuation is not None:
-        if valuation_staleness(cma, valuation):
-            raise HTTPException(
-                status_code=409,
-                detail="Inputs have changed since the valuation was calculated. "
-                "Recalculate the valuation (and regenerate strategies) before "
-                "generating a report.",
-            )
-        if any(s.updated_at < valuation.created_at for s in cma.strategies):
-            raise HTTPException(
-                status_code=409,
-                detail="The listing strategies were generated from an earlier "
-                "valuation. Regenerate strategies before generating a report.",
-            )
+    if valuation_staleness(cma, valuation):
+        raise HTTPException(
+            status_code=409,
+            detail="Inputs have changed since the valuation was calculated. "
+            "Recalculate the valuation (and regenerate strategies) before "
+            "generating a report.",
+        )
+    if suggestions_outdated(cma, config):
+        raise HTTPException(
+            status_code=409,
+            detail="The suggested adjustments were generated from an earlier "
+            "assumption set. Regenerate suggested adjustments, recalculate the "
+            "valuation, and refresh strategies before generating a report.",
+        )
+    if any(s.updated_at < valuation.created_at for s in cma.strategies):
+        raise HTTPException(
+            status_code=409,
+            detail="The listing strategies were generated from an earlier "
+            "valuation. Regenerate strategies before generating a report.",
+        )
 
     context = build_report_context(
         cma, _comparable_report_rows(cma), valuation, cma.strategies, config

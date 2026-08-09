@@ -258,3 +258,100 @@ def test_report_blocked_until_outputs_are_consistent(client):
     # Regenerate strategies: the full chain is consistent again.
     client.post("/api/cmas/%d/strategies/generate" % cma_id)
     assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+
+# --- Second audit round: provenance, bounds, completeness --------------------
+
+def test_outdated_suggestions_flagged_and_block_report(client):
+    """Changing assumptions without regenerating suggestions must not produce
+    a 'fresh' valuation from stale suggested amounts."""
+    cma_id = _prepare_valued_cma(client)
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+    # Change an assumption but do NOT regenerate suggestions.
+    client.put("/api/cmas/%d/config" % cma_id,
+               json={"assumptions": {"gla_per_sqft": 300.0}})
+    config = client.get("/api/cmas/%d/config" % cma_id).json()
+    assert config["suggestions_outdated"] is True
+
+    # Recalculating makes the fingerprint current, but the valuation must
+    # carry the provenance warning and the report must stay blocked.
+    valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
+    codes = [w["code"] for w in valuation["warnings"]]
+    assert "outdated_suggestions" in codes
+    response = client.post("/api/cmas/%d/report" % cma_id)
+    assert response.status_code == 409
+    assert "assumption set" in response.json()["detail"]
+
+    # Regenerating suggestions clears the flag and unblocks the chain.
+    client.post("/api/cmas/%d/adjustments/suggest" % cma_id)
+    assert client.get("/api/cmas/%d/config" % cma_id).json()[
+        "suggestions_outdated"] is False
+    valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
+    assert "outdated_suggestions" not in [w["code"] for w in valuation["warnings"]]
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+
+def test_incomplete_cma_cannot_generate_report(client):
+    cma_id = create_cma(client, "Subject-only report")
+    client.put("/api/cmas/%d/subject" % cma_id, json=SUBJECT)
+    # No valuation yet.
+    response = client.post("/api/cmas/%d/report" % cma_id)
+    assert response.status_code == 400
+    assert "valuation" in response.json()["detail"].lower()
+    # Valuation but no strategies.
+    import_sample(client, cma_id)
+    client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
+    response = client.post("/api/cmas/%d/report" % cma_id)
+    assert response.status_code == 400
+    assert "strategies" in response.json()["detail"].lower()
+
+
+def test_extreme_amounts_are_rejected(client):
+    cma_id = _prepare_valued_cma(client)
+    comp = client.get("/api/cmas/%d/comparables" % cma_id).json()[0]
+    # Beyond the +/- $1B bound: rejected before it can overflow anything.
+    response = client.post("/api/comparables/%d/adjustments" % comp["id"],
+                           json={"category": "other", "amount": 1e12})
+    assert response.status_code == 422
+    response = client.patch("/api/comparables/%d" % comp["id"],
+                            json={"sale_price": 1e12})
+    assert response.status_code == 422
+
+
+def test_csv_rejects_absurd_prices():
+    text = CSV_HEADER + "\n1 Big St,2000000000,2026-04-01,1500,3,2\n"
+    rows, errors = parse_comparables_csv(text)
+    assert rows == []
+    assert errors[0]["field"] == "sale_price"
+    assert "at most" in errors[0]["message"]
+
+
+def test_negative_central_estimate_blocks_strategies(client):
+    cma_id = create_cma(client, "Negative central")
+    client.put("/api/cmas/%d/subject" % cma_id, json=SUBJECT)
+    text = CSV_HEADER + "\n1 Cheap St,1000000,2026-04-01,1500,3,2\n"
+    client.post("/api/cmas/%d/comparables/import-csv" % cma_id,
+                files={"file": ("one.csv", text.encode(), "text/csv")})
+    comp = client.get("/api/cmas/%d/comparables" % cma_id).json()[0]
+    # A within-bounds but absurd downward adjustment drives the value negative.
+    client.post("/api/comparables/%d/adjustments" % comp["id"],
+                json={"category": "other", "amount": -900_000_000})
+    valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
+    assert valuation["central_estimate"] < 0
+    assert "nonpositive_estimate" in [w["code"] for w in valuation["warnings"]]
+    # No negative list prices can be generated from it.
+    assert client.post("/api/cmas/%d/strategies/generate" % cma_id).status_code == 400
+
+
+def test_strategies_record_their_source_valuation(client):
+    cma_id = _prepare_valued_cma(client)
+    valuation = client.get("/api/cmas/%d/valuation" % cma_id).json()
+    strategies = client.post("/api/cmas/%d/strategies/generate" % cma_id).json()
+    assert all(s["valuation_id"] == valuation["id"] for s in strategies)
+    # Regenerating after a recalculation re-links to the new valuation.
+    new_valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
+    strategies = client.post("/api/cmas/%d/strategies/generate" % cma_id).json()
+    assert all(s["valuation_id"] == new_valuation["id"] for s in strategies)

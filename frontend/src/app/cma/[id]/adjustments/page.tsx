@@ -73,6 +73,8 @@ export default function AdjustmentsPage() {
         setConfig(await api.updateConfig(cma.id, { assumptions }));
       }
       setComparables(await api.suggestAdjustments(cma.id));
+      // Refetch: generating clears the outdated-suggestions flag server-side.
+      setConfig(await api.getConfig(cma.id));
       reload();
     });
     setSuggesting(false);
@@ -144,6 +146,13 @@ export default function AdjustmentsPage() {
           property</Link> before generating adjustments.
         </WarningBox>
       )}
+      {config?.suggestions_outdated && (
+        <WarningBox>
+          The suggested adjustments below were generated from an earlier assumption
+          set. Press “Generate suggested adjustments” so the amounts match the
+          assumptions shown above; the valuation and report are blocked until then.
+        </WarningBox>
+      )}
       {error && <ErrorBox message={error} onRetry={load} />}
       {!comparables && !error && <Spinner label="Loading adjustments…" />}
 
@@ -167,12 +176,14 @@ export default function AdjustmentsPage() {
               guard(async () => {
                 await api.updateAdjustment(adj.id, { amount });
                 setComparables(await api.listComparables(cma.id));
+                reload(); // refresh the header's staleness flag
               })
             }
             onDeleteAdjustment={(adj) =>
               guard(async () => {
                 await api.deleteAdjustment(adj.id);
                 setComparables(await api.listComparables(cma.id));
+                reload(); // refresh the header's staleness flag
               })
             }
             onAddManual={async (values) => {
@@ -185,6 +196,7 @@ export default function AdjustmentsPage() {
                   explanation: values.explanation || null,
                 });
                 setComparables(await api.listComparables(cma.id));
+                reload(); // refresh the header's staleness flag
               } catch (e) {
                 setError((e as ApiError).message);
                 throw e;

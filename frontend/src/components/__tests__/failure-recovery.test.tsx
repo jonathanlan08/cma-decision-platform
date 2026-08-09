@@ -85,6 +85,7 @@ describe("WeightsEditor validation", () => {
     assumptions: {},
     reconciliation: {},
     updated_at: "2026-08-01T00:00:00Z",
+    suggestions_outdated: false,
   };
 
   it("blocks saving when every weight is zero", async () => {
