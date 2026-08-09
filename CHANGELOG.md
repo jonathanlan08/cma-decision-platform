@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- **Outdated-data visibility everywhere** (2026-08-09):
+  - The dashboard shows an "outdated: recalculate" badge on any analysis
+    whose value range no longer matches its inputs.
+  - The strategies screen warns when its cards were generated from an
+    earlier valuation (via the stored valuation_id) with an inline
+    refresh action.
+  - The comparables table collapses secondary columns (sale date, sq ft,
+    beds/baths, distance) on phones; the sold date moves into the address
+    sub-line and full details stay in the expandable breakdown.
+
 - **Convenience & accessibility pass** (2026-08-09):
   - Failed form submits move focus to the first invalid field (subject and
     comparable forms).

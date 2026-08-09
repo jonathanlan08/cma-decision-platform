@@ -150,10 +150,11 @@ export function ComparablesTable({
     return out;
   }, [comparables, filter, includedOnly, sortKey, sortAsc]);
 
-  function header(key: SortKey, label: string, numeric = false) {
+  // extraClass lets secondary columns collapse on narrow screens.
+  function header(key: SortKey, label: string, numeric = false, extraClass = "") {
     const active = sortKey === key;
     return (
-      <th scope="col" className={numeric ? "num" : ""} aria-sort={active ? (sortAsc ? "ascending" : "descending") : undefined}>
+      <th scope="col" className={`${numeric ? "num" : ""} ${extraClass}`.trim()} aria-sort={active ? (sortAsc ? "ascending" : "descending") : undefined}>
         <button
           type="button"
           className="inline-flex items-center gap-1 font-semibold uppercase"
@@ -215,10 +216,13 @@ export function ComparablesTable({
               </th>
               {header("address", "Address")}
               {header("sale_price", "Sale price", true)}
-              {header("sale_date", "Sale date")}
-              {header("square_feet", "Sq ft", true)}
-              <th scope="col" className="num">Bd/Ba</th>
-              {header("distance", "Dist (mi)", true)}
+              {/* Secondary columns collapse on phones; the sold date moves
+                  into the address sub-line and everything stays available in
+                  the expandable similarity breakdown. */}
+              {header("sale_date", "Sale date", false, "hidden md:table-cell")}
+              {header("square_feet", "Sq ft", true, "hidden md:table-cell")}
+              <th scope="col" className="num hidden md:table-cell">Bd/Ba</th>
+              {header("distance", "Dist (mi)", true, "hidden md:table-cell")}
               {header("similarity", "Similarity", true)}
               <th scope="col" className="num">Weight ×</th>
               <th scope="col">
@@ -255,6 +259,7 @@ export function ComparablesTable({
                       <span className="block text-xs text-slate-500">
                         {comp.city ?? ""} {comp.zip_code ?? ""}
                         {comp.source ? ` · ${comp.source}` : ""}
+                        <span className="md:hidden"> · sold {shortDate(comp.sale_date)}</span>
                       </span>
                       {!included && (
                         <span className="mt-1 block">
@@ -277,7 +282,7 @@ export function ComparablesTable({
                       )}
                     </td>
                     <td className="num">{money(comp.sale_price)}</td>
-                    <td className="whitespace-nowrap">
+                    <td className="hidden whitespace-nowrap md:table-cell">
                       {shortDate(comp.sale_date)}{" "}
                       {age !== "recent" && (
                         <Badge tone={age === "aging" ? "amber" : "red"}>
@@ -285,11 +290,11 @@ export function ComparablesTable({
                         </Badge>
                       )}
                     </td>
-                    <td className="num">{num(comp.square_feet)}</td>
-                    <td className="num whitespace-nowrap">
+                    <td className="num hidden md:table-cell">{num(comp.square_feet)}</td>
+                    <td className="num hidden whitespace-nowrap md:table-cell">
                       {comp.bedrooms}/{comp.bathrooms}
                     </td>
-                    <td className="num">
+                    <td className="num hidden md:table-cell">
                       {comp.effective_distance_miles === null
                         ? "—"
                         : comp.effective_distance_miles.toFixed(2)}
