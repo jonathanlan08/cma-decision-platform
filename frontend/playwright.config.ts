@@ -13,7 +13,12 @@ export default defineConfig({
     trace: "retain-on-failure",
     screenshot: "only-on-failure",
   },
-  projects: [{ name: "chromium", use: { ...devices["Desktop Chrome"] } }],
+  projects: [
+    { name: "chromium", use: { ...devices["Desktop Chrome"] } },
+    // WebKit = the Safari/iOS rendering engine; closest cross-engine proxy
+    // for Safari on macOS and iOS available in CI.
+    { name: "webkit", use: { ...devices["Desktop Safari"] } },
+  ],
   webServer: [
     {
       command:

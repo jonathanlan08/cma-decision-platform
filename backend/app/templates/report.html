@@ -75,7 +75,7 @@
     <div><span>Lot size</span><strong>{{ "%.0f"|format(subject.lot_size) if subject.lot_size else "—" }} sq ft</strong></div>
     <div><span>Year built</span><strong>{{ subject.year_built if subject.year_built else "—" }}</strong></div>
     <div><span>Condition</span><strong>{{ subject.condition if subject.condition else "—" }}</strong></div>
-    <div><span>Parking</span><strong>{{ subject.parking_spaces if subject.parking_spaces is not none else "—" }} space(s)</strong></div>
+    <div><span>Parking</span><strong>{% if subject.parking_spaces is not none %}{{ subject.parking_spaces }} space(s){% else %}—{% endif %}</strong></div>
     <div><span>Pool</span><strong>{{ "Yes" if subject.has_pool else "No" }}</strong></div>
   </div>
   {% if subject.renovation_notes %}

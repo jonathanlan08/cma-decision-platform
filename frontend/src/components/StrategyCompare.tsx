@@ -64,7 +64,12 @@ export function StrategyCompare({
             onChange={(e) => setDrafts((d) => ({ ...d, [strategy.id]: e.target.value }))}
             onBlur={() => commit(strategy)}
             onKeyDown={(e) => {
-              if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+              // Commit directly — routing Enter through blur() is fragile in
+              // some embedded webviews.
+              if (e.key === "Enter") {
+                e.preventDefault();
+                commit(strategy);
+              }
             }}
           />
 

@@ -89,7 +89,11 @@ export default function DashboardPage() {
       {cmas && visible.length === 0 && (
         <EmptyState title="No CMA analyses yet">
           <p>
-            Create your first CMA, or seed the demo analysis by running{" "}
+            Create your first CMA (the{" "}
+            <a href="/guide" className="text-accent-700 underline-offset-2 hover:underline">
+              how-to-use guide
+            </a>{" "}
+            walks through every step), or seed the demo analysis by running{" "}
             <code className="rounded bg-slate-100 px-1">python -m app.seed</code> in the
             backend.
           </p>

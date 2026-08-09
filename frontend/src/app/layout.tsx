@@ -49,9 +49,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 CMA <span className="text-accent-700">Decision Platform</span>
               </span>
             </Link>
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xxs font-medium text-amber-800">
-              Educational demo — not an appraisal
-            </span>
+            <div className="flex items-center gap-3">
+              <Link
+                href="/guide"
+                className="text-sm font-medium text-slate-600 underline-offset-2 hover:text-accent-700 hover:underline"
+              >
+                How to use
+              </Link>
+              <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xxs font-medium text-amber-800">
+                Educational demo — not an appraisal
+              </span>
+            </div>
           </div>
         </header>
         <main id="main" className="mx-auto w-full max-w-6xl flex-1 px-4 py-6">

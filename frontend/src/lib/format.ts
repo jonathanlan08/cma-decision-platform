@@ -20,7 +20,12 @@ export function pct(value: number | null | undefined, digits = 1): string {
 
 export function shortDate(iso: string | null | undefined): string {
   if (!iso) return "—";
-  const date = new Date(iso);
+  // Date-only strings must be built as LOCAL dates: new Date("2026-06-15")
+  // parses as UTC midnight and renders a day early west of Greenwich.
+  const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
+  const date = dateOnly
+    ? new Date(Number(dateOnly[1]), Number(dateOnly[2]) - 1, Number(dateOnly[3]))
+    : new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
   return date.toLocaleDateString("en-US", {
     year: "numeric",

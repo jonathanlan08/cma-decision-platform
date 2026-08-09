@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- Full QA pass (see docs/QA_REPORT.md): fixed a UTC date-shift display bug,
+  replaced `window.confirm` deletion with an accessible two-step confirm,
+  made Enter commit strategy prices directly, plus two cosmetic fixes.
+  E2E now also runs on WebKit (Safari/iOS engine) locally and in CI.
+- "How to use" guide page (`/guide`): workflow walkthrough, CSV help,
+  glossary, FAQ, data rules — linked from the header and dashboard.
 - Assumption sensitivity analysis: `GET /api/cmas/{id}/sensitivity` varies
   each assumption ±20% (manual adjustments held fixed) and the valuation
   screen shows a tornado panel of the impacts, sorted largest first.

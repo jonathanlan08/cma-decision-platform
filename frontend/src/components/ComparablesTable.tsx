@@ -41,6 +41,48 @@ function staleness(saleDate: string): "recent" | "aging" | "stale" {
   return "stale";
 }
 
+// Inline two-step delete: native confirm() dialogs are blocked in some
+// embedded webviews and are poor UX; this keeps the confirmation visible,
+// accessible, and testable.
+function DeleteControl({
+  comp,
+  onDelete,
+}: {
+  comp: Comparable;
+  onDelete: (comp: Comparable) => void;
+}) {
+  const [arming, setArming] = useState(false);
+  if (!arming) {
+    return (
+      <button
+        type="button"
+        className="cursor-pointer text-xs text-red-700 underline-offset-2 hover:underline"
+        onClick={() => setArming(true)}
+      >
+        Delete<span className="sr-only"> {comp.address}</span>
+      </button>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1.5 whitespace-nowrap">
+      <button
+        type="button"
+        className="cursor-pointer rounded bg-red-700 px-1.5 py-0.5 text-xs font-medium text-white hover:bg-red-800"
+        onClick={() => onDelete(comp)}
+      >
+        Confirm delete<span className="sr-only"> {comp.address}</span>
+      </button>
+      <button
+        type="button"
+        className="cursor-pointer text-xs text-slate-500 underline-offset-2 hover:underline"
+        onClick={() => setArming(false)}
+      >
+        Cancel
+      </button>
+    </span>
+  );
+}
+
 export function ComparablesTable({
   comparables,
   onToggleInclude,
@@ -252,13 +294,7 @@ export function ComparablesTable({
                       />
                     </td>
                     <td>
-                      <button
-                        type="button"
-                        className="text-xs text-red-700 underline-offset-2 hover:underline"
-                        onClick={() => onDelete(comp)}
-                      >
-                        Delete<span className="sr-only"> {comp.address}</span>
-                      </button>
+                      <DeleteControl comp={comp} onDelete={onDelete} />
                     </td>
                   </tr>
                   {expanded && comp.selection?.similarity_breakdown && (

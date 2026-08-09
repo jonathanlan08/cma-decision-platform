@@ -123,8 +123,9 @@ export default function ComparablesPage() {
         {!comparables && !error && <Spinner label="Loading comparables…" />}
         {comparables && comparables.length === 0 && (
           <EmptyState title="No comparables yet">
-            <p>Upload a CSV above or add sales manually. The bundled synthetic sample is at
-              <code className="mx-1 rounded bg-slate-100 px-1">data/sample/comparables_sample.csv</code>.
+            <p>
+              Upload a CSV above or add sales manually. The bundled synthetic sample is at{" "}
+              <code className="rounded bg-slate-100 px-1">data/sample/comparables_sample.csv</code>.
             </p>
           </EmptyState>
         )}
@@ -154,7 +155,6 @@ export default function ComparablesPage() {
             }
             onDelete={(comp) =>
               guard(async () => {
-                if (!window.confirm(`Delete comparable "${comp.address}"? This is recorded in the audit trail.`)) return;
                 await api.deleteComparable(comp.id);
                 load();
                 reload();

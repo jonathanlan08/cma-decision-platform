@@ -83,6 +83,34 @@ describe("ComparablesTable", () => {
     expect(screen.queryAllByText("1210 Demo Oak Ave")).toHaveLength(0);
   });
 
+  it("requires a two-step confirmation before deleting", async () => {
+    const user = userEvent.setup();
+    const h = handlers();
+    const comp = makeComparable();
+    render(<ComparablesTable comparables={[comp]} {...h} />);
+
+    await user.click(screen.getByRole("button", { name: /delete 1210 demo oak ave/i }));
+    expect(h.onDelete).not.toHaveBeenCalled(); // first click only arms
+
+    await user.click(
+      screen.getByRole("button", { name: /confirm delete 1210 demo oak ave/i }),
+    );
+    expect(h.onDelete).toHaveBeenCalledWith(comp);
+  });
+
+  it("cancel disarms the delete confirmation", async () => {
+    const user = userEvent.setup();
+    const h = handlers();
+    render(<ComparablesTable comparables={[makeComparable()]} {...h} />);
+
+    await user.click(screen.getByRole("button", { name: /delete 1210 demo oak ave/i }));
+    await user.click(screen.getByRole("button", { name: /cancel/i }));
+    expect(h.onDelete).not.toHaveBeenCalled();
+    expect(
+      screen.getByRole("button", { name: /delete 1210 demo oak ave/i }),
+    ).toBeInTheDocument();
+  });
+
   it("hides excluded rows when 'Included only' is checked", async () => {
     const user = userEvent.setup();
     const h = handlers();
