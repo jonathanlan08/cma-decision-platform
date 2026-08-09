@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Strategy } from "@/lib/types";
-import { Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
+import { Card, EmptyState, ErrorBox, Spinner, WarningBox } from "@/components/ui";
 import { StaleBanner } from "@/components/StaleBanner";
 import { StrategyCompare } from "@/components/StrategyCompare";
 import { useCma } from "../cma-context";
@@ -17,6 +17,14 @@ export default function StrategiesPage() {
   const [busyId, setBusyId] = useState<number | null>(null);
 
   const central = cma.latest_valuation?.central_estimate ?? null;
+  // Strategies remember which valuation produced them; a mismatch with the
+  // latest valuation means their prices/labels reference an older estimate.
+  const latestValuationId = cma.latest_valuation?.id ?? null;
+  const strategiesOutdated =
+    latestValuationId !== null &&
+    (strategies ?? []).some(
+      (s) => s.valuation_id !== null && s.valuation_id !== latestValuationId,
+    );
 
   const load = useCallback(() => {
     setError(null);
@@ -72,6 +80,21 @@ export default function StrategiesPage() {
             reload();
           }}
         />
+        {!cma.latest_valuation?.stale && strategiesOutdated && (
+          <WarningBox>
+            These strategies were generated from an earlier valuation, so their
+            prices and labels may not match the current central estimate.{" "}
+            <button
+              type="button"
+              className="cursor-pointer font-medium underline"
+              disabled={generating}
+              onClick={generate}
+            >
+              Refresh them from the latest valuation
+            </button>
+            .
+          </WarningBox>
+        )}
 
         {central === null && (
           <EmptyState title="Valuation needed first">

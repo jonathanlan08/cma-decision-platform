@@ -176,6 +176,11 @@ export default function DashboardPage() {
                             {money(cma.latest_valuation.low_estimate)} –{" "}
                             {money(cma.latest_valuation.high_estimate)}
                           </span>
+                          {cma.latest_valuation.stale && (
+                            <span className="mt-0.5 block">
+                              <Badge tone="amber">outdated: recalculate</Badge>
+                            </span>
+                          )}
                         </>
                       ) : (
                         <span className="text-slate-400">Not calculated</span>
