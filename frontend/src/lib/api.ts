@@ -7,6 +7,7 @@ import type {
   Config,
   CSVImportResult,
   Report,
+  Sensitivity,
   Strategy,
   Subject,
   Valuation,
@@ -105,6 +106,8 @@ export const api = {
     request<void>(`/api/adjustments/${adjId}`, { method: "DELETE" }),
 
   getValuation: (cmaId: number) => request<Valuation>(`/api/cmas/${cmaId}/valuation`),
+  getSensitivity: (cmaId: number) =>
+    request<Sensitivity>(`/api/cmas/${cmaId}/sensitivity`),
   recalcValuation: (cmaId: number) =>
     request<Valuation>(`/api/cmas/${cmaId}/valuation/recalculate`, { method: "POST" }),
 

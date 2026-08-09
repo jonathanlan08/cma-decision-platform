@@ -1,7 +1,7 @@
 """Adjustment management and valuation reconciliation."""
 from typing import List
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
 
 from ..constants import CALC_VERSION
@@ -12,6 +12,7 @@ from ..schemas import (
     AdjustmentOut,
     AdjustmentUpdate,
     ComparableOut,
+    SensitivityOut,
     ValuationOut,
 )
 from ..services.adjustments import (
@@ -22,6 +23,7 @@ from ..services.adjustments import (
 )
 from ..services.audit import log_event
 from ..services.reconciliation import reconcile
+from ..services.sensitivity import sensitivity_analysis
 from .helpers import (
     comparable_out,
     ensure_config,
@@ -126,6 +128,27 @@ def delete_adjustment(adjustment_id: int, db: Session = Depends(get_db)):
     db.delete(adj)
     touch(cma)
     db.commit()
+
+
+@router.get("/cmas/{cma_id}/sensitivity", response_model=SensitivityOut)
+def get_sensitivity(
+    cma_id: int,
+    variation_pct: float = Query(default=0.20, gt=0, le=1.0),
+    db: Session = Depends(get_db),
+):
+    """Read-only what-if: vary each assumption ±variation_pct and report how
+    the central estimate moves. Nothing is persisted or audit-logged."""
+    cma = get_cma_or_404(db, cma_id)
+    if cma.subject is None:
+        raise HTTPException(status_code=400,
+                            detail="Enter the subject property before running sensitivity")
+    config = ensure_config(db, cma)
+    result = sensitivity_analysis(
+        cma.subject, cma.comparables, config.assumptions, config.reconciliation,
+        variation_pct=variation_pct,
+    )
+    db.commit()  # ensure_config may have created the default config row
+    return SensitivityOut(**result)
 
 
 @router.get("/cmas/{cma_id}/valuation", response_model=ValuationOut)

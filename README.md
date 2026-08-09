@@ -36,6 +36,11 @@ judgment — and the tooling should make that argument inspectable, not hide it.
   weighted $/sq ft, dispersion-based low–high range, per-comparable influence
   percentages, and explicit warnings (too few comps, outliers, stale sales,
   over-adjusted comps, high dispersion).
+- **Assumption sensitivity** — a tornado view of how much the central estimate
+  moves as each assumption varies ±20%, so users see exactly which inputs the
+  result leans on.
+- **Proximity map** — dependency-free SVG plot of comps around the subject with
+  distance rings (no external tile servers or scraping).
 - **Listing strategy simulator** — Market-Entry / Competitive / Aspirational
   scenarios with editable prices and deterministic, documented heuristics for
   buyer-interest and price-reduction-risk labels (no fake DOM predictions).

@@ -184,6 +184,24 @@ export interface AuditEvent {
   calc_version: string;
 }
 
+export interface SensitivityItem {
+  assumption: string;
+  value: number;
+  low_value: number;
+  high_value: number;
+  central_low: number | null;
+  central_high: number | null;
+  delta_low: number | null;
+  delta_high: number | null;
+}
+
+export interface Sensitivity {
+  baseline_central: number | null;
+  variation_pct: number;
+  note: string;
+  items: SensitivityItem[];
+}
+
 export interface Config {
   weights: Record<string, number>;
   similarity_params: Record<string, number>;

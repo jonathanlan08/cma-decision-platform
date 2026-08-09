@@ -6,17 +6,24 @@ Complete workflow: subject → comparables (CSV/manual) → similarity →
 adjustments → reconciliation → strategies → report → audit trail, with the full
 test pyramid and CI. SQLite default, Postgres option, no auth (demo mode).
 
+## Shipped since v0.1.0
+
+- ✅ Sensitivity view: how the estimate moves as each assumption varies
+  (tornado panel on the valuation screen, `GET /api/cmas/{id}/sensitivity`).
+- ✅ Basic map: dependency-free SVG proximity plot (subject-centered, distance
+  rings, included/excluded encoding) on the comparables screen.
+
 ## v0.2 — Evidence-derived adjustments
 
 - **Paired-sales analysis**: derive suggested adjustment magnitudes from the
   comparable set itself (e.g., regress adjusted price on GLA within the comp
   set) and show the derivation — keeping the transparency rule.
-- Sensitivity view: how the range moves as each assumption varies.
 - Assumption presets per market area, still user-owned and audited.
 
 ## v0.3 — Map & market context
 
-- Map view of subject + comps (Leaflet/MapLibre with open tiles).
+- Tile-based map view of subject + comps (Leaflet/MapLibre with open tiles),
+  upgrading the current SVG proximity plot.
 - Optional public-dataset import adapters where licensing allows, with
   provenance recorded per row.
 - Market-trend helper for the time adjustment (user-confirmed, never silent).

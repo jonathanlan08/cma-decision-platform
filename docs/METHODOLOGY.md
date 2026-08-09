@@ -149,6 +149,17 @@ Warnings (all thresholds configurable): no comparables · fewer than 3 ·
 single-comparable band · cov > 15% · gross adjustments > 25% of sale price ·
 sale older than 12 months · adjusted value deviating > 20% from the median.
 
+### 4.1 Assumption sensitivity (read-only what-if)
+
+`GET /api/cmas/{id}/sensitivity` varies each dollar assumption ±20% (relative,
+configurable via `variation_pct`), one at a time, and reports how the central
+estimate moves. Semantics: suggested adjustments are recomputed per variation
+while **manual adjustments are held fixed**; the baseline is reconstructed the
+same way so all values are comparable; zero-valued assumptions are skipped;
+nothing is persisted or audit-logged (it is a pure read). Items are sorted by
+absolute impact so the user sees which assumptions the result actually leans
+on. (`tests/test_sensitivity.py`)
+
 ## 5. Listing strategies
 
 Three default scenarios priced off the central estimate `V`, rounded to the

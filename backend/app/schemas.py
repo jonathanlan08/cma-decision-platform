@@ -310,6 +310,26 @@ class ConfigUpdate(BaseModel):
         return v
 
 
+# --- Sensitivity -------------------------------------------------------------
+
+class SensitivityItem(BaseModel):
+    assumption: str
+    value: float
+    low_value: float
+    high_value: float
+    central_low: Optional[float]
+    central_high: Optional[float]
+    delta_low: Optional[float]
+    delta_high: Optional[float]
+
+
+class SensitivityOut(BaseModel):
+    baseline_central: Optional[float]
+    variation_pct: float
+    note: str
+    items: List[SensitivityItem]
+
+
 # --- Strategies --------------------------------------------------------------
 
 class StrategyOut(ORMModel):

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Comparable, Config } from "@/lib/types";
 import { Card, EmptyState, ErrorBox, Spinner, WarningBox } from "@/components/ui";
+import { CompMap } from "@/components/CompMap";
 import { ComparablesTable } from "@/components/ComparablesTable";
 import { ComparableForm, type ComparableFormValues } from "@/components/ComparableForm";
 import { CsvUpload } from "@/components/CsvUpload";
@@ -161,11 +162,13 @@ export default function ComparablesPage() {
             }
           />
         )}
-        <p className="mt-3 text-xs text-slate-500">
-          Map view is planned (see roadmap); coordinates and distances are already used in
-          similarity scoring.
-        </p>
       </Card>
+
+      {cma.subject && comparables && comparables.length > 0 && (
+        <Card title="Proximity map">
+          <CompMap subject={cma.subject} comparables={comparables} />
+        </Card>
+      )}
 
       {config && (
         <Card title="Similarity weights (this analysis)">

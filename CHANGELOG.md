@@ -1,5 +1,18 @@
 # Changelog
 
+## Unreleased
+
+- Assumption sensitivity analysis: `GET /api/cmas/{id}/sensitivity` varies
+  each assumption ±20% (manual adjustments held fixed) and the valuation
+  screen shows a tornado panel of the impacts, sorted largest first.
+- Proximity map on the comparables screen: dependency-free SVG plot of
+  comparables around the subject with distance rings and included/excluded
+  encoding.
+- UI polish: IBM Plex Sans (self-hosted), progress-aware workflow stepper
+  (summary API now exposes `strategy_count`/`report_count`), dashboard stat
+  row, unified low–central–high range panel (mobile-safe), SVG warning icons,
+  `prefers-reduced-motion` support, contrast fixes.
+
 ## v0.1.0 — 2026-08-08
 
 First release: the complete transparent-CMA MVP.

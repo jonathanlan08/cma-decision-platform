@@ -3,8 +3,9 @@
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
-import type { Config, Valuation } from "@/lib/types";
+import type { Config, Sensitivity, Valuation } from "@/lib/types";
 import { Card, EmptyState, ErrorBox, Spinner, WarningBox } from "@/components/ui";
+import { SensitivityPanel } from "@/components/SensitivityPanel";
 import { ValuationChart } from "@/components/ValuationChart";
 import { money, num, pct } from "@/lib/format";
 import { useCma } from "../cma-context";
@@ -23,6 +24,7 @@ export default function ValuationPage() {
   const { cma, reload } = useCma();
   const [valuation, setValuation] = useState<Valuation | null>(null);
   const [config, setConfig] = useState<Config | null>(null);
+  const [sensitivity, setSensitivity] = useState<Sensitivity | null>(null);
   const [rangeK, setRangeK] = useState("1");
   const [error, setError] = useState<string | null>(null);
   const [loaded, setLoaded] = useState(false);
@@ -42,6 +44,9 @@ export default function ValuationPage() {
         setConfig(cfg);
         setRangeK(String(cfg.reconciliation.range_k ?? 1));
         setLoaded(true);
+        if (val?.central_estimate != null) {
+          api.getSensitivity(cma.id).then(setSensitivity).catch(() => setSensitivity(null));
+        }
       })
       .catch((e: ApiError) => setError(e.message));
   }, [cma.id]);
@@ -57,6 +62,7 @@ export default function ValuationPage() {
         setConfig(await api.updateConfig(cma.id, { reconciliation: { range_k: k } }));
       }
       setValuation(await api.recalcValuation(cma.id));
+      api.getSensitivity(cma.id).then(setSensitivity).catch(() => setSensitivity(null));
       reload();
     } catch (e) {
       setError((e as ApiError).message);
@@ -209,6 +215,12 @@ export default function ValuationPage() {
           </>
         )}
       </Card>
+
+      {valuation && sensitivity && sensitivity.items.length > 0 && (
+        <Card title="Which assumptions move the estimate?">
+          <SensitivityPanel data={sensitivity} />
+        </Card>
+      )}
     </div>
   );
 }
