@@ -14,7 +14,9 @@ select = ["E", "F", "W", "I", "B", "UP", "C4"]
 ignore = [
   "UP007", # keep Optional[X] — runtime-evaluated annotations must work on 3.9
   "UP006", # keep typing.List/Dict where used for the same reason
+  "UP035", # companion to UP006 — typing.List/Dict imports stay
   "UP045", # keep Optional[X] over X | None (3.9 runtime compatibility)
+  "UP031", # percent-formatting is used consistently in this codebase
   "B008",  # FastAPI Depends() in argument defaults is idiomatic
 ]
 

@@ -68,8 +68,9 @@ async def import_csv(cma_id: int, file: UploadFile = File(...), db: Session = De
         raise HTTPException(status_code=413, detail="CSV file exceeds the 2 MB limit")
     try:
         text = raw.decode("utf-8-sig")
-    except UnicodeDecodeError:
-        raise HTTPException(status_code=400, detail="File must be UTF-8 encoded CSV")
+    except UnicodeDecodeError as exc:
+        raise HTTPException(status_code=400,
+                            detail="File must be UTF-8 encoded CSV") from exc
 
     rows, errors = parse_comparables_csv(text)
     created = []

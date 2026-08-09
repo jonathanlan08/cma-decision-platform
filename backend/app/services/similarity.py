@@ -173,8 +173,8 @@ def _component_condition(subject: Any, comp: Any, params: Dict) -> Dict:
     return {
         "missing": False,
         "score": score,
-        "subject_value": getattr(subject, "condition"),
-        "comparable_value": getattr(comp, "condition"),
+        "subject_value": subject.condition,
+        "comparable_value": comp.condition,
         "detail": "Δ %d step(s) of %d cap" % (abs(c - s), params["condition_cap_steps"]),
     }
 
