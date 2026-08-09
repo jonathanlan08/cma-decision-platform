@@ -157,7 +157,14 @@ def update_selection(comp_id: int, payload: SelectionUpdate, db: Session = Depen
                       entity_type="comparable", entity_id=comp.id,
                       details={"reason": changes.get("exclusion_reason")})
     elif "exclusion_reason" in changes:
+        old_reason = selection.exclusion_reason
         selection.exclusion_reason = changes["exclusion_reason"]
+        if not selection.included and old_reason != selection.exclusion_reason:
+            log_event(db, comp.cma_id, "exclusion_reason_updated",
+                      "Recorded exclusion reason for %s: %s" % (
+                          comp.address, selection.exclusion_reason or "(cleared)"),
+                      entity_type="comparable", entity_id=comp.id,
+                      details={"from": old_reason, "to": selection.exclusion_reason})
 
     if ("user_weight_multiplier" in changes
             and changes["user_weight_multiplier"] != selection.user_weight_multiplier):
