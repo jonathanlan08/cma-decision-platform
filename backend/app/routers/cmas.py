@@ -15,10 +15,15 @@ from ..schemas import (
     ConfigUpdate,
     SubjectIn,
     SubjectOut,
-    ValuationOut,
 )
 from ..services.audit import log_event
-from .helpers import ensure_config, get_cma_or_404, latest_valuation, touch
+from .helpers import (
+    ensure_config,
+    get_cma_or_404,
+    latest_valuation,
+    touch,
+    valuation_out,
+)
 
 router = APIRouter(prefix="/api/cmas", tags=["CMA analyses"])
 
@@ -47,7 +52,7 @@ def _summary(cma: CMAAnalysis) -> CMASummary:
         ),
         strategy_count=len(cma.strategies),
         report_count=len(cma.reports),
-        latest_valuation=ValuationOut.model_validate(valuation) if valuation else None,
+        latest_valuation=valuation_out(cma, valuation) if valuation else None,
     )
 
 

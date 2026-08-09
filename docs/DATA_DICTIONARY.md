@@ -51,9 +51,11 @@ Same physical fields as the subject, plus:
 
 | Field | Type | Notes |
 |---|---|---|
-| sale_price | float | required, > 0 |
+| sale_price | float | required, > 0, finite |
 | sale_date | date | required, not future |
 | square_feet, bedrooms, bathrooms | required | unlike subject |
+| property_type | str? | null = unknown; skipped in scoring, never guessed |
+| has_pool | bool? | null = unknown; skipped in adjustments, never guessed |
 | distance_from_subject | float? | miles; fallback when either side lacks coordinates |
 | notes, source | str? | source defaults: `manual-entry` / `csv-upload` |
 
@@ -93,13 +95,15 @@ Same physical fields as the subject, plus:
 
 | Field | Type | Notes |
 |---|---|---|
-| calc_version | str | e.g. `calc-v1.0` |
+| calc_version | str | e.g. `calc-v1.1` |
 | central_estimate / low_estimate / high_estimate | float? | null when no comps |
 | median_adjusted | float? | unweighted median |
 | weighted_ppsf | float? | over comps with valid sq ft |
 | dispersion | float? | weighted std dev; null for n ≤ 1 |
 | cov | float? | dispersion / central |
 | included_count | int | |
+| effective_count | int? | included comps with positive weight (drives adequacy warnings) |
+| input_fingerprint | str? | SHA-256 of the inputs; mismatch with current inputs = stale |
 | warnings | JSON | `[{code, message, comp_id?}]` |
 | per_comparable | JSON | weight/influence snapshot per included comp |
 
@@ -137,9 +141,12 @@ Same physical fields as the subject, plus:
 
 Header names must match exactly (case-insensitive). Required:
 `address, sale_price, sale_date, square_feet, bedrooms, bathrooms`.
-Validation per row: price > 0; date `YYYY-MM-DD` or `MM/DD/YYYY`, not future;
-sq ft > 0; bedrooms whole ≥ 0; bathrooms ≥ 0; lat ∈ [−90, 90]; lon ∈ [−180, 180];
-year_built ∈ [1800, next year]; condition/property_type from their enums; pool
-∈ {true,false,yes,no,y,n,1,0,blank}; currency symbols/commas stripped from
-numbers. Limits: 2 MB, 500 rows. Failed rows are reported as
-`{row, field, message}` and skipped; valid rows import.
+Validation per row: price > 0 and finite (NaN/Infinity rejected); date
+`YYYY-MM-DD` or `MM/DD/YYYY`, not future; sq ft > 0; bedrooms whole ≥ 0;
+bathrooms ≥ 0; lat ∈ [−90, 90]; lon ∈ [−180, 180]; year_built ∈ [1800, next
+year]; condition/property_type from their enums; pool ∈
+{true,false,yes,no,y,n,1,0}; a blank pool or property_type is stored as
+unknown (null), never guessed; rows with more cells than the header are
+rejected; currency symbols/commas stripped from numbers. Limits: 2 MB, 500
+rows. Failed rows are reported as `{row, field, message}` and skipped; valid
+rows import.

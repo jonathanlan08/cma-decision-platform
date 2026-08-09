@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from ..database import get_db
-from ..models import ListingStrategy
+from ..models import ListingStrategy, utcnow
 from ..schemas import StrategyOut, StrategyUpdate
 from ..services.audit import log_event
 from ..services.strategies import derive_metrics, generate_default_strategies
@@ -49,9 +49,14 @@ def generate_strategies(cma_id: int, db: Session = Depends(get_db)):
             derived = derive_metrics(current.list_price, central, comp_values)
             derived["description"] = spec["derived"].get("description")
             current.derived = derived
+            current.updated_at = utcnow()
         else:
             current.list_price = spec["list_price"]
             current.derived = spec["derived"]
+            # Force the timestamp forward even when the regenerated values are
+            # identical: the report gate compares it to the valuation's
+            # created_at to prove the strategies match the current valuation.
+            current.updated_at = utcnow()
 
     log_event(
         db, cma.id, "strategies_generated",

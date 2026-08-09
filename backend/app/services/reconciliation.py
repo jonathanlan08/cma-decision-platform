@@ -30,7 +30,8 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
         return {
             "central_estimate": None, "low_estimate": None, "high_estimate": None,
             "median_adjusted": None, "weighted_ppsf": None, "dispersion": None,
-            "cov": None, "included_count": 0, "per_comparable": [],
+            "cov": None, "included_count": 0, "effective_count": 0,
+            "per_comparable": [],
             "warnings": [{
                 "code": "no_comparables",
                 "message": "No comparables are included, so a valuation cannot be calculated.",
@@ -38,30 +39,70 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
         }
 
     n = len(items)
-    if n < 3:
-        warnings.append({
-            "code": "insufficient_comparables",
-            "message": "Only %d comparable(s) included. At least 3 are recommended "
-            "for a meaningful analysis." % n,
-        })
 
     # Raw weight = similarity (0-1) × user multiplier. Similarity already
     # contains the recency component, so recency is not double-counted here.
+    # An unscored comparable (similarity None) gets ZERO weight, never a
+    # default: it must not outrank scored comparables.
     raw_weights = []
+    scored_flags = []
     for item in items:
         similarity = item.get("similarity")
-        base = (similarity / 100.0) if similarity is not None else 1.0
-        raw_weights.append(max(0.0, base * item.get("multiplier", 1.0)))
+        if similarity is None:
+            raw_weights.append(0.0)
+            scored_flags.append(False)
+            warnings.append({
+                "code": "unscored_comparable", "comp_id": item["comp_id"],
+                "message": "%s has no similarity score and was given zero weight. "
+                "Recalculate similarity scores for it to influence the estimate."
+                % (item.get("address") or "A comparable"),
+            })
+        else:
+            raw_weights.append(max(0.0, (similarity / 100.0) * item.get("multiplier", 1.0)))
+            scored_flags.append(True)
 
     total = sum(raw_weights)
     if total <= 0:
+        if not any(scored_flags):
+            warnings.append({
+                "code": "no_scored_comparables",
+                "message": "No included comparable has a similarity score, so a "
+                "weighted valuation cannot be calculated. Recalculate similarity "
+                "scores first.",
+            })
+            per_comp = [{
+                "comp_id": item["comp_id"], "address": item.get("address"),
+                "adjusted_price": round(item["adjusted_price"], 2),
+                "similarity": None, "multiplier": item.get("multiplier", 1.0),
+                "raw_weight": 0.0, "normalized_weight": 0.0, "influence_pct": 0.0,
+            } for item in items]
+            return {
+                "central_estimate": None, "low_estimate": None, "high_estimate": None,
+                "median_adjusted": None, "weighted_ppsf": None, "dispersion": None,
+                "cov": None, "included_count": n, "effective_count": 0,
+                "per_comparable": per_comp, "warnings": warnings,
+            }
+        # Scores/multipliers zeroed everything out: fall back to equal weights
+        # across the SCORED comparables only.
         warnings.append({
             "code": "zero_weights",
-            "message": "All comparable weights were zero; equal weights were applied.",
+            "message": "All comparable weights were zero; equal weights were "
+            "applied across the scored comparables.",
         })
-        raw_weights = [1.0] * n
-        total = float(n)
+        raw_weights = [1.0 if flag else 0.0 for flag in scored_flags]
+        total = sum(raw_weights)
     norm_weights = [w / total for w in raw_weights]
+
+    # Adequacy is judged on comparables that actually carry weight, not on the
+    # raw included count: three included rows with weights [1, 0, 0] are one
+    # effective comparable.
+    effective_count = sum(1 for w in raw_weights if w > 0)
+    if effective_count < 3:
+        warnings.append({
+            "code": "insufficient_comparables",
+            "message": "Only %d comparable(s) carry weight in the reconciliation. "
+            "At least 3 are recommended for a meaningful analysis." % effective_count,
+        })
 
     values = [item["adjusted_price"] for item in items]
     central = sum(w * v for w, v in zip(norm_weights, values))
@@ -75,12 +116,14 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
         cov = dispersion / central if central > 0 else None
 
     k = params.get("range_k", 1.0)
-    if n == 1:
+    if effective_count == 1:
+        # One weighted comparable gives a zero-width dispersion; a nominal band
+        # is more honest than false precision.
         pct = params.get("single_comp_range_pct", 0.05)
         low, high = central * (1 - pct), central * (1 + pct)
         warnings.append({
             "code": "single_comparable",
-            "message": "Only one comparable is included; the range is a nominal "
+            "message": "Only one comparable carries weight; the range is a nominal "
             "±%.0f%% band, not a data-driven estimate." % (pct * 100),
         })
     else:
@@ -156,6 +199,7 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
         "dispersion": round(dispersion, 2) if dispersion is not None else None,
         "cov": round(cov, 4) if cov is not None else None,
         "included_count": n,
+        "effective_count": effective_count,
         "per_comparable": per_comp,
         "warnings": warnings,
     }

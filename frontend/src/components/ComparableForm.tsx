@@ -72,7 +72,7 @@ export function ComparableForm({
   onSave,
   saving,
 }: {
-  onSave: (values: ComparableFormValues) => void;
+  onSave: (values: ComparableFormValues) => void | Promise<void>;
   saving?: boolean;
 }) {
   const [values, setValues] = useState<ComparableFormValues>(EMPTY);
@@ -83,13 +83,19 @@ export function ComparableForm({
   }
   const numeric = (raw: string): number | null => (raw.trim() === "" ? null : Number(raw));
 
-  function handleSubmit(event: React.FormEvent) {
+  async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const found = validate(values);
     setErrors(found);
     if (Object.keys(found).length === 0) {
-      onSave(values);
-      setValues(EMPTY);
+      try {
+        await onSave(values);
+        // Clear the draft only after the save succeeded; a failed request
+        // must not throw away what the user typed.
+        setValues(EMPTY);
+      } catch {
+        // The page surfaces the error; the draft stays editable.
+      }
     }
   }
 

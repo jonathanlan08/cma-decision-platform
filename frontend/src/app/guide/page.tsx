@@ -66,7 +66,7 @@ const STEPS = [
   },
   {
     title: "6 · Report",
-    body: "Generates the seller-facing document: subject summary, methodology explanation, comparable sales, the full adjustment grids, reconciliation, strategy comparison, assumptions, and the limitations disclaimer. It opens print-ready; use your browser's Print → Save as PDF.",
+    body: "Generates the seller-facing document: subject summary, methodology explanation, comparable sales, the full adjustment grids, reconciliation, strategy comparison, assumptions, and the limitations disclaimer. Open it from the reports list; it is print-ready, so use your browser's Print → Save as PDF. If any input changed after the last valuation, generation is refused until you recalculate, so a report can never mix current inputs with outdated numbers.",
     tip: "Each report records which methodology version produced it, so an old report can always be traced.",
   },
   {
@@ -209,6 +209,13 @@ export default function GuidePage() {
             <Term name="A comp seems wrong: delete or exclude?">
               Exclude, with a reason. Deletion removes the record; exclusion keeps
               it visible and documents your judgment in the audit trail.
+            </Term>
+            <Term name="Why does it say my estimate is outdated?">
+              You changed something the valuation depends on (a comparable, an
+              adjustment, an assumption, or the subject) after it was calculated.
+              The old numbers stay visible but are flagged, and report generation
+              is blocked until you recalculate the valuation and refresh
+              strategies, so every report comes from one consistent state.
             </Term>
             <Term name="Where does the data come from?">
               Only from you: manual entry or your CSV upload. The platform never

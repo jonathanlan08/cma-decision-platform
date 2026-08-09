@@ -94,7 +94,7 @@ See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 | Frontend | Next.js 14 (App Router), React 18, TypeScript, Tailwind CSS, Recharts |
 | Backend | FastAPI, Pydantic v2, SQLAlchemy 2, Alembic |
 | Database | SQLite by default; PostgreSQL 16 via `docker-compose` |
-| Testing | pytest (79 tests) · Vitest + React Testing Library (18) · Playwright e2e (2 journeys) |
+| Testing | pytest (106 tests) · Vitest + React Testing Library (33) · Playwright e2e (2 journeys × 2 engines) |
 | Quality | Ruff, ESLint, TypeScript strict, GitHub Actions CI |
 | Reports | Jinja2 → print-ready HTML (→ PDF when WeasyPrint is installed) |
 
@@ -137,7 +137,11 @@ Copy `.env.example` to `.env` (all optional for local dev):
 |---|---|---|
 | `DATABASE_URL` | `sqlite:///./cma.db` | SQLAlchemy URL; set to Postgres for parity |
 | `CORS_ORIGINS` | `http://localhost:3000` | Comma-separated allowed origins |
-| `NEXT_PUBLIC_API_BASE` | `http://localhost:8000` | API base URL baked into the frontend |
+| `NEXT_PUBLIC_API_BASE` | `http://localhost:8000` | API base URL baked into the frontend at build time |
+
+Note: `NEXT_PUBLIC_API_BASE` is read by **Next.js**, not the backend, so a root
+`.env` does not reach it. To change it, put it in `frontend/.env.local` (or
+export it in the shell that runs `npm run dev` / `npm run build`).
 
 ### PostgreSQL option
 
@@ -160,8 +164,12 @@ ruff check app tests
 # Frontend component tests / lint / types
 cd frontend && npm test && npm run lint && npm run typecheck
 
-# End-to-end (builds nothing itself: have backend+frontend running, or let
-# Playwright start them; browsers: npx playwright install chromium webkit)
+# End-to-end (browsers: npx playwright install chromium webkit).
+# Locally, Playwright reuses servers already running on :3000/:8000 - including
+# their database - so e2e test CMAs will appear in that database. For an
+# isolated run (build first; Playwright's `npm run start` does not build):
+#   cd frontend && npm run build
+#   CI=1 npx playwright test        # starts its own servers on a scratch DB
 cd frontend && npx playwright test
 
 # Independent math audit: recomputes the entire seeded valuation from the
@@ -206,14 +214,27 @@ Required columns: `address`, `sale_price`, `sale_date` (YYYY-MM-DD),
 - Never commit real client records, private addresses tied to clients, MLS
   credentials, or brokerage-confidential data. See [docs/SECURITY.md](docs/SECURITY.md).
 
-## Limitations
+## Known limitations
 
 - Educational tool; not USPAP-compliant; not an appraisal.
-- Linear similarity curves and additive dollar adjustments are simplifications.
+- Linear similarity curves and additive dollar adjustments are simplifications;
+  they are documented and independently verified, not empirically validated
+  against market outcomes.
 - Default weights/assumptions are demonstration values requiring user review.
+  The arithmetic is provably correct (`tools/verify_math.py`), but the outputs
+  are only as good as the assumptions a user feeds in.
+- **No authentication, authorization, or rate limiting**: run it locally or
+  behind your own auth. Do not deploy it publicly with real client data as-is.
+- Licensed comparable-data acquisition (MLS, county records) is out of scope;
+  the data path is manual entry and user-supplied CSVs.
 - No live market data, geocoding, or map tiles in the MVP.
 - Demo mode is single-user with a seeded account (schema is auth-ready).
 - Strategy labels are deterministic heuristics, not validated predictions.
+- The valuation range is an analytical band (weighted std dev), not a
+  statistical confidence interval.
+- Reports are gated on consistency (stale valuations are refused), but a
+  polished report can still convey more confidence than sample assumptions
+  deserve; the disclaimer and assumption tables exist for exactly that reason.
 
 ## Roadmap
 

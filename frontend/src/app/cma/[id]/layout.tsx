@@ -69,7 +69,7 @@ export default function CmaLayout({ children }: { children: React.ReactNode }) {
           <Badge tone={STATUS_TONE[cma.status]}>{cma.status}</Badge>
         </div>
         {cma.latest_valuation?.central_estimate != null && (
-          <p className="text-sm text-slate-600">
+          <p className="flex items-center gap-2 text-sm text-slate-600">
             Central estimate:{" "}
             <span className="font-semibold tabular-nums">
               {cma.latest_valuation.central_estimate.toLocaleString("en-US", {
@@ -78,6 +78,9 @@ export default function CmaLayout({ children }: { children: React.ReactNode }) {
                 maximumFractionDigits: 0,
               })}
             </span>
+            {cma.latest_valuation.stale && (
+              <Badge tone="amber">outdated: inputs changed</Badge>
+            )}
           </p>
         )}
       </div>

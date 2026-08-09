@@ -98,7 +98,9 @@ class ComparableProperty(Base):
     zip_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    property_type: Mapped[str] = mapped_column(String(30), default="single_family")
+    # property_type and has_pool are nullable: an unknown value stays unknown
+    # (skipped in scoring/adjustments) instead of being silently guessed.
+    property_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     sale_price: Mapped[float] = mapped_column(Float)
     sale_date: Mapped[date] = mapped_column(Date)
     square_feet: Mapped[float] = mapped_column(Float)
@@ -108,7 +110,7 @@ class ComparableProperty(Base):
     year_built: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     condition: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     parking_spaces: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    has_pool: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_pool: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     distance_from_subject: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # miles
     notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     source: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
@@ -198,6 +200,11 @@ class ValuationResult(Base):
     dispersion: Mapped[Optional[float]] = mapped_column(Float, nullable=True)  # weighted std dev
     cov: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     included_count: Mapped[int] = mapped_column(Integer, default=0)
+    # Number of included comparables that actually carry positive weight.
+    effective_count: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    # SHA-256 of the inputs this valuation was computed from; a mismatch with
+    # the current inputs means the valuation is stale.
+    input_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     warnings: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)
     per_comparable: Mapped[Optional[list]] = mapped_column(JSON, nullable=True)  # weight snapshot
 

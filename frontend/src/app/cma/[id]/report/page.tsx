@@ -4,14 +4,16 @@ import { useCallback, useEffect, useState } from "react";
 import { api, ApiError } from "@/lib/api";
 import type { Report } from "@/lib/types";
 import { Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
+import { StaleBanner } from "@/components/StaleBanner";
 import { dateTime } from "@/lib/format";
 import { useCma } from "../cma-context";
 
 export default function ReportPage() {
-  const { cma } = useCma();
+  const { cma, reload } = useCma();
   const [reports, setReports] = useState<Report[] | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [generating, setGenerating] = useState(false);
+  const [lastGeneratedId, setLastGeneratedId] = useState<number | null>(null);
 
   const load = useCallback(() => {
     setError(null);
@@ -27,9 +29,12 @@ export default function ReportPage() {
     setGenerating(true);
     setError(null);
     try {
+      // No automatic window.open here: browsers block popups that are not a
+      // direct click result, which made generation look like a silent no-op.
       const report = await api.generateReport(cma.id);
+      setLastGeneratedId(report.id);
       load();
-      window.open(api.reportDownloadUrl(report.id), "_blank", "noopener");
+      reload(); // refresh the shared summary so the Report step shows its check
     } catch (e) {
       setError((e as ApiError).message);
     } finally {
@@ -61,8 +66,23 @@ export default function ReportPage() {
       {!cma.subject && (
         <p className="text-sm text-amber-800">Enter the subject property first.</p>
       )}
+      <StaleBanner cma={cma} />
       {error && <ErrorBox message={error} onRetry={load} />}
       {!reports && !error && <Spinner label="Loading reports…" />}
+      {lastGeneratedId !== null && !error && (
+        <p role="status" className="mb-2 rounded-md bg-emerald-50 px-3 py-2 text-sm text-emerald-800">
+          Report generated.{" "}
+          <a
+            href={api.reportDownloadUrl(lastGeneratedId)}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium underline"
+          >
+            Open the new report
+          </a>
+          , or use the list below.
+        </p>
+      )}
       {reports && reports.length === 0 && (
         <EmptyState title="No reports generated yet">
           <p>Each generated report is kept with its calculation version for the audit trail.</p>

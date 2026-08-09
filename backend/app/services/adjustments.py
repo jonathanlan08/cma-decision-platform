@@ -144,9 +144,11 @@ def suggest_adjustments(
                 % (abs(diff), "fewer" if diff > 0 else "more"),
             })
 
-    # Pool (flat amount)
+    # Pool (flat amount). Unknown pool status on either side is skipped, never
+    # treated as "no pool".
     pool_value = assumptions.get("pool_value", 0.0)
-    if pool_value != 0 and bool(subject.has_pool) != bool(comp.has_pool):
+    if (pool_value != 0 and subject.has_pool is not None and comp.has_pool is not None
+            and bool(subject.has_pool) != bool(comp.has_pool)):
         diff = (1 if subject.has_pool else 0) - (1 if comp.has_pool else 0)
         out.append({
             "category": "pool",

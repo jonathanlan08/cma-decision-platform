@@ -44,13 +44,24 @@ def check_eq(label, expected, actual):
         failures.append("%-55s expected %r, platform says %r" % (label, expected, actual))
 
 
-cma = get("/api/cmas/1")
+# Audit the first CMA that has a valuation (normally the seeded demo);
+# an explicit id can be passed as the first CLI argument.
+if len(sys.argv) > 1:
+    CMA_ID = int(sys.argv[1])
+else:
+    with_valuation = [c for c in get("/api/cmas") if c.get("latest_valuation")]
+    if not with_valuation:
+        print("No CMA with a valuation found; run python -m app.seed first.")
+        sys.exit(1)
+    CMA_ID = min(c["id"] for c in with_valuation)
+
+cma = get("/api/cmas/%d" % CMA_ID)
 subject = cma["subject"]
-comps = get("/api/cmas/1/comparables")
-config = get("/api/cmas/1/config")
-valuation = get("/api/cmas/1/valuation")
-strategies = get("/api/cmas/1/strategies")
-sensitivity = get("/api/cmas/1/sensitivity")
+comps = get("/api/cmas/%d/comparables" % CMA_ID)
+config = get("/api/cmas/%d/config" % CMA_ID)
+valuation = get("/api/cmas/%d/valuation" % CMA_ID)
+strategies = get("/api/cmas/%d/strategies" % CMA_ID)
+sensitivity = get("/api/cmas/%d/sensitivity" % CMA_ID)
 
 W = config["weights"]
 P = config["similarity_params"]
@@ -145,7 +156,11 @@ def suggested_amounts(comp):
         d = subject["parking_spaces"] - comp["parking_spaces"]
         if d:
             out["parking"] = d * A["per_parking_space"]
-    if A["pool_value"] and bool(subject["has_pool"]) != bool(comp["has_pool"]):
+    # calc-v1.1: unknown pool status (null) on either side is skipped, never
+    # treated as "no pool".
+    if (A["pool_value"] and subject["has_pool"] is not None
+            and comp["has_pool"] is not None
+            and bool(subject["has_pool"]) != bool(comp["has_pool"])):
         out["pool"] = A["pool_value"] * (1 if subject["has_pool"] else -1)
     return out
 
@@ -176,8 +191,12 @@ for comp in comps:
 
 # ---- 3. Reconciliation ------------------------------------------------------
 included = [c for c in comps if c["selection"]["included"]]
-raw = [(c["selection"]["similarity_score"] / 100.0) * c["selection"]["user_weight_multiplier"]
-       for c in included]
+# calc-v1.1: an unscored comparable (similarity null) carries zero weight.
+raw = [
+    0.0 if c["selection"]["similarity_score"] is None
+    else (c["selection"]["similarity_score"] / 100.0) * c["selection"]["user_weight_multiplier"]
+    for c in included
+]
 values = [c["sale_price"] + sum(a["amount"] for a in c["adjustments"]) for c in included]
 tw = sum(raw)
 norm = [w / tw for w in raw]
@@ -200,6 +219,8 @@ check("cov", std / central, valuation["cov"], tol=0.0001)
 check("median adjusted", median, valuation["median_adjusted"])
 check("weighted ppsf", wppsf, valuation["weighted_ppsf"])
 check_eq("included count", len(included), valuation["included_count"])
+check_eq("effective count", sum(1 for w in raw if w > 0), valuation["effective_count"])
+check_eq("valuation is not stale", False, valuation["stale"])
 for w, c, entry in zip(norm, included, valuation["per_comparable"]):
     check("influence: %s" % c["address"], w * 100, entry["influence_pct"], tol=0.06)
 check("influences sum to 100", 100.0,

@@ -124,6 +124,12 @@ export default function ValuationPage() {
 
         {valuation && (
           <>
+            {valuation.stale && (
+              <WarningBox>
+                Inputs have changed since this valuation was calculated. The numbers
+                below may be outdated; press “Recalculate valuation” to refresh them.
+              </WarningBox>
+            )}
             <div className="overflow-hidden rounded-lg border-2 border-accent-700">
               <dl className="grid grid-cols-1 divide-y divide-slate-200 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
                 <div className="bg-white px-4 py-4 text-center">

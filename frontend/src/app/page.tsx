@@ -3,11 +3,24 @@
 import { useCallback, useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { api, ApiError } from "@/lib/api";
-import type { CMASummary } from "@/lib/types";
+import type { CMAStatus, CMASummary } from "@/lib/types";
 import { money, dateTime } from "@/lib/format";
 import { Badge, Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
 
 const STATUS_TONE = { draft: "amber", completed: "green", archived: "slate" } as const;
+
+// The lifecycle transitions each status offers on the dashboard.
+const STATUS_ACTIONS: Record<CMAStatus, { label: string; to: CMAStatus }[]> = {
+  draft: [
+    { label: "Mark completed", to: "completed" },
+    { label: "Archive", to: "archived" },
+  ],
+  completed: [
+    { label: "Reopen as draft", to: "draft" },
+    { label: "Archive", to: "archived" },
+  ],
+  archived: [{ label: "Restore to draft", to: "draft" }],
+};
 
 export default function DashboardPage() {
   const router = useRouter();
@@ -15,6 +28,22 @@ export default function DashboardPage() {
   const [error, setError] = useState<string | null>(null);
   const [creating, setCreating] = useState(false);
   const [showArchived, setShowArchived] = useState(false);
+  const [statusBusyId, setStatusBusyId] = useState<number | null>(null);
+
+  async function changeStatus(cma: CMASummary, status: CMAStatus) {
+    setStatusBusyId(cma.id);
+    setError(null);
+    try {
+      const updated = await api.updateCma(cma.id, { status });
+      setCmas((list) =>
+        (list ?? []).map((c) => (c.id === cma.id ? { ...c, status: updated.status } : c)),
+      );
+    } catch (e) {
+      setError((e as ApiError).message);
+    } finally {
+      setStatusBusyId(null);
+    }
+  }
 
   const load = useCallback(() => {
     setError(null);
@@ -116,6 +145,7 @@ export default function DashboardPage() {
                   <th scope="col" className="num">Comparables</th>
                   <th scope="col" className="num">Estimated value range</th>
                   <th scope="col">Last updated</th>
+                  <th scope="col"><span className="sr-only">Actions</span></th>
                 </tr>
               </thead>
               <tbody>
@@ -152,6 +182,22 @@ export default function DashboardPage() {
                       )}
                     </td>
                     <td className="whitespace-nowrap text-slate-500">{dateTime(cma.updated_at)}</td>
+                    <td className="whitespace-nowrap">
+                      <span className="inline-flex items-center gap-2">
+                        {STATUS_ACTIONS[cma.status].map((action) => (
+                          <button
+                            key={action.to + action.label}
+                            type="button"
+                            className="cursor-pointer text-xs text-accent-700 underline-offset-2 hover:underline disabled:text-slate-400"
+                            disabled={statusBusyId === cma.id}
+                            onClick={() => changeStatus(cma, action.to)}
+                          >
+                            {action.label}
+                            <span className="sr-only"> {cma.title}</span>
+                          </button>
+                        ))}
+                      </span>
+                    </td>
                   </tr>
                 ))}
               </tbody>

@@ -14,8 +14,12 @@ export interface Valuation {
   dispersion: number | null;
   cov: number | null;
   included_count: number;
+  effective_count: number | null;
   warnings: ValuationWarning[] | null;
   per_comparable: PerComparableWeight[] | null;
+  // True when inputs changed after this valuation was calculated; null when
+  // unknown (valuations stored before fingerprinting).
+  stale: boolean | null;
 }
 
 export interface ValuationWarning {
@@ -121,7 +125,7 @@ export interface Comparable {
   zip_code: string | null;
   latitude: number | null;
   longitude: number | null;
-  property_type: string;
+  property_type: string | null;
   sale_price: number;
   sale_date: string;
   square_feet: number;
@@ -131,7 +135,7 @@ export interface Comparable {
   year_built: number | null;
   condition: string | null;
   parking_spaces: number | null;
-  has_pool: boolean;
+  has_pool: boolean | null;
   distance_from_subject: number | null;
   notes: string | null;
   source: string | null;

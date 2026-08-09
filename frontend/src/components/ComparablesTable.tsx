@@ -96,6 +96,41 @@ export function ComparablesTable({
   const [filter, setFilter] = useState("");
   const [includedOnly, setIncludedOnly] = useState(false);
   const [expandedId, setExpandedId] = useState<number | null>(null);
+  // Blur-committed edit drafts, keyed by comparable id. Dropped on commit so a
+  // failed save falls back to the last SAVED value instead of showing an
+  // unsaved one as if it stuck.
+  const [multiplierDrafts, setMultiplierDrafts] = useState<Record<number, string>>({});
+  const [reasonDrafts, setReasonDrafts] = useState<Record<number, string>>({});
+
+  function commitMultiplier(comp: Comparable) {
+    const raw = multiplierDrafts[comp.id];
+    if (raw !== undefined) {
+      const value = Number(raw);
+      const current = comp.selection?.user_weight_multiplier ?? 1;
+      if (!Number.isNaN(value) && Number.isFinite(value) && value !== current) {
+        onMultiplierChange(comp, value);
+      }
+      setMultiplierDrafts((d) => {
+        const next = { ...d };
+        delete next[comp.id];
+        return next;
+      });
+    }
+  }
+
+  function commitReason(comp: Comparable) {
+    const raw = reasonDrafts[comp.id];
+    if (raw !== undefined) {
+      if (raw !== (comp.selection?.exclusion_reason ?? "")) {
+        onExclusionReason(comp, raw);
+      }
+      setReasonDrafts((d) => {
+        const next = { ...d };
+        delete next[comp.id];
+        return next;
+      });
+    }
+  }
 
   const rows = useMemo(() => {
     let out = [...comparables];
@@ -228,11 +263,12 @@ export function ComparablesTable({
                             type="text"
                             className="field-input max-w-xs text-xs"
                             placeholder="Reason for exclusion (recorded in audit trail)"
-                            defaultValue={comp.selection?.exclusion_reason ?? ""}
-                            onBlur={(e) => {
-                              if (e.target.value !== (comp.selection?.exclusion_reason ?? ""))
-                                onExclusionReason(comp, e.target.value);
-                            }}
+                            value={reasonDrafts[comp.id] ??
+                              (comp.selection?.exclusion_reason ?? "")}
+                            onChange={(e) =>
+                              setReasonDrafts((d) => ({ ...d, [comp.id]: e.target.value }))
+                            }
+                            onBlur={() => commitReason(comp)}
                           />
                         </span>
                       )}
@@ -281,16 +317,13 @@ export function ComparablesTable({
                         max={10}
                         step={0.1}
                         className="field-input w-16 text-right"
-                        defaultValue={comp.selection?.user_weight_multiplier ?? 1}
+                        value={multiplierDrafts[comp.id] ??
+                          String(comp.selection?.user_weight_multiplier ?? 1)}
                         disabled={!included || busyId === comp.id}
-                        onBlur={(e) => {
-                          const value = Number(e.target.value);
-                          if (
-                            !Number.isNaN(value) &&
-                            value !== (comp.selection?.user_weight_multiplier ?? 1)
-                          )
-                            onMultiplierChange(comp, value);
-                        }}
+                        onChange={(e) =>
+                          setMultiplierDrafts((d) => ({ ...d, [comp.id]: e.target.value }))
+                        }
+                        onBlur={() => commitMultiplier(comp)}
                       />
                     </td>
                     <td>

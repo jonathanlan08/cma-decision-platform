@@ -117,4 +117,6 @@ def test_optional_fields_may_be_blank():
     rows, errors = parse_comparables_csv(text)
     assert errors == []
     assert rows[0]["lot_size"] is None
-    assert rows[0]["has_pool"] is False
+    # Blank pool and property_type stay unknown; missing data is never guessed.
+    assert rows[0]["has_pool"] is None
+    assert rows[0]["property_type"] is None
