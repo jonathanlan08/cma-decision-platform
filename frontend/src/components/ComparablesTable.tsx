@@ -236,14 +236,17 @@ export function ComparablesTable({
                 <Fragment key={comp.id}>
                   <tr className={included ? "" : "bg-slate-50 text-slate-400"}>
                     <td>
-                      <input
-                        type="checkbox"
-                        aria-label={`Include ${comp.address} in the analysis`}
-                        className="h-4 w-4 rounded border-slate-300"
-                        checked={included}
-                        disabled={busyId === comp.id}
-                        onChange={(e) => onToggleInclude(comp, e.target.checked)}
-                      />
+                      {/* Padded label = a 44px hit area around the checkbox. */}
+                      <label className="-m-2.5 inline-flex cursor-pointer items-center justify-center p-2.5">
+                        <input
+                          type="checkbox"
+                          aria-label={`Include ${comp.address} in the analysis`}
+                          className="h-5 w-5 rounded border-slate-300"
+                          checked={included}
+                          disabled={busyId === comp.id}
+                          onChange={(e) => onToggleInclude(comp, e.target.checked)}
+                        />
+                      </label>
                     </td>
                     <td>
                       <span className={`font-medium ${included ? "text-slate-800" : ""}`}>

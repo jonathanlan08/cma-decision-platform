@@ -76,11 +76,24 @@ export function SubjectForm({
 
   const numeric = (raw: string): number | null => (raw.trim() === "" ? null : Number(raw));
 
+  // Visual order of the validated fields, used to focus the first error.
+  const FIELD_ORDER: (keyof SubjectFormValues)[] = [
+    "address", "bedrooms", "bathrooms", "square_feet", "lot_size",
+    "year_built", "latitude", "longitude",
+  ];
+
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const found = validate(values);
     setErrors(found);
-    if (Object.keys(found).length === 0) onSave(values);
+    if (Object.keys(found).length === 0) {
+      onSave(values);
+      return;
+    }
+    // Move focus to the first invalid field so keyboard and screen-reader
+    // users land on the problem instead of hunting for it.
+    const first = FIELD_ORDER.find((key) => found[key]);
+    if (first) document.getElementById(`subject-${first}`)?.focus();
   }
 
   const inputProps = (key: keyof SubjectFormValues) => ({
@@ -206,12 +219,16 @@ export function SubjectForm({
             onChange={(e) => set("parking_spaces", numeric(e.target.value))}
           />
         </Field>
-        <div className="flex items-end pb-2">
-          <label htmlFor="subject-has_pool" className="flex items-center gap-2 text-sm">
+        <div className="flex items-end pb-1">
+          {/* Label wraps the checkbox so the whole padded row is tappable. */}
+          <label
+            htmlFor="subject-has_pool"
+            className="flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-sm"
+          >
             <input
               id="subject-has_pool"
               type="checkbox"
-              className="h-4 w-4 rounded border-slate-300"
+              className="h-5 w-5 rounded border-slate-300"
               checked={values.has_pool}
               onChange={(e) => set("has_pool", e.target.checked)}
             />

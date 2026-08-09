@@ -1,7 +1,7 @@
 // Regression tests for the 2026-08 audit fixes: failed saves must not lose
 // drafts, invalid weights must not be savable, and stale valuations must be
 // visibly flagged.
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { describe, expect, it, vi } from "vitest";
 import type { CMADetail } from "@/lib/types";
@@ -10,6 +10,15 @@ import { ComparableForm } from "../ComparableForm";
 import { StaleBanner } from "../StaleBanner";
 import { WeightsEditor } from "../WeightsEditor";
 import { makeComparable } from "./fixtures";
+
+vi.mock("@/lib/api", () => ({
+  api: {
+    recalcValuation: vi.fn().mockResolvedValue({}),
+    generateStrategies: vi.fn().mockResolvedValue([]),
+  },
+  ApiError: class ApiError extends Error {},
+}));
+import { api } from "@/lib/api";
 
 function makeCma(overrides: Partial<CMADetail> = {}): CMADetail {
   return {
@@ -118,8 +127,25 @@ describe("StaleBanner", () => {
   it("warns when the latest valuation is stale", () => {
     render(<StaleBanner cma={makeCma({ latest_valuation: staleValuation })} />);
     expect(screen.getByText(/inputs have changed/i)).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /recalculate the valuation/i }))
+    expect(screen.getByRole("link", { name: /valuation step/i }))
       .toHaveAttribute("href", "/cma/1/valuation");
+  });
+
+  it("repairs the stale state in one click", async () => {
+    const user = userEvent.setup();
+    const onRefreshed = vi.fn();
+    render(
+      <StaleBanner
+        cma={makeCma({ latest_valuation: staleValuation })}
+        onRefreshed={onRefreshed}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /recalculate valuation/i }),
+    );
+    await waitFor(() => expect(onRefreshed).toHaveBeenCalled());
+    expect(api.recalcValuation).toHaveBeenCalledWith(1);
+    expect(api.generateStrategies).toHaveBeenCalledWith(1);
   });
 
   it("renders nothing when the valuation is current", () => {
@@ -129,5 +155,14 @@ describe("StaleBanner", () => {
       />,
     );
     expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("Error focus management", () => {
+  it("moves focus to the first invalid field on submit", async () => {
+    const user = userEvent.setup();
+    render(<ComparableForm onSave={vi.fn()} />);
+    await user.click(screen.getByRole("button", { name: /add comparable/i }));
+    expect(screen.getByLabelText(/address/i)).toHaveFocus();
   });
 });

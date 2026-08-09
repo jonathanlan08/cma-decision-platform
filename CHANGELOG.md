@@ -2,6 +2,20 @@
 
 ## Unreleased
 
+- **Convenience & accessibility pass** (2026-08-09):
+  - Failed form submits move focus to the first invalid field (subject and
+    comparable forms).
+  - Checkbox touch targets enlarged to a 44px hit area (include toggles,
+    pool checkbox).
+  - Strategy price inputs show currency formatting ($ prefix, thousands
+    separators) and accept pasted "$1,234,567" values.
+  - The stale-valuation banner gained a one-click "Recalculate valuation &
+    refresh strategies" repair button.
+  - The workflow stepper auto-centers the active step on narrow screens and
+    shows an edge fade so later steps are never silently hidden (scrolling
+    only its own container, never the page).
+  - Analyses can be renamed inline from the workflow header (audit-logged).
+
 - **Provenance and completeness hardening** (second external audit round,
   2026-08-09):
   - Suggested adjustments record the assumption set that produced them.

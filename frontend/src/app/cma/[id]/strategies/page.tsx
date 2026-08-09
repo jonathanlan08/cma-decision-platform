@@ -65,7 +65,13 @@ export default function StrategiesPage() {
           own scenario; interest and risk labels update from documented thresholds. These
           are qualitative scenario estimates, not validated predictions of market outcomes.
         </p>
-        <StaleBanner cma={cma} />
+        <StaleBanner
+          cma={cma}
+          onRefreshed={() => {
+            load();
+            reload();
+          }}
+        />
 
         {central === null && (
           <EmptyState title="Valuation needed first">

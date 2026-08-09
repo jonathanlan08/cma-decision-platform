@@ -85,6 +85,11 @@ export function ComparableForm({
   }
   const numeric = (raw: string): number | null => (raw.trim() === "" ? null : Number(raw));
 
+  // Visual order of the validated fields, used to focus the first error.
+  const FIELD_ORDER: (keyof ComparableFormValues)[] = [
+    "address", "sale_price", "sale_date", "square_feet", "bedrooms", "bathrooms",
+  ];
+
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     const found = validate(values);
@@ -98,7 +103,12 @@ export function ComparableForm({
       } catch {
         // The page surfaces the error; the draft stays editable.
       }
+      return;
     }
+    // Move focus to the first invalid field so keyboard and screen-reader
+    // users land on the problem instead of hunting for it.
+    const first = FIELD_ORDER.find((key) => found[key]);
+    if (first) document.getElementById(`comp-${first}`)?.focus();
   }
 
   const props = (key: keyof ComparableFormValues) => ({

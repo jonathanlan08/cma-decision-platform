@@ -75,7 +75,13 @@ export default function ReportPage() {
           A report needs the full analysis. Still missing: {missing.join(", ")}.
         </p>
       )}
-      <StaleBanner cma={cma} />
+      <StaleBanner
+        cma={cma}
+        onRefreshed={() => {
+          load();
+          reload();
+        }}
+      />
       {error && <ErrorBox message={error} onRetry={load} />}
       {!reports && !error && <Spinner label="Loading reports…" />}
       {lastGeneratedId !== null && !error && (
