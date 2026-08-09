@@ -72,7 +72,8 @@ def _parse_float(value: str, field: str, errors: List[Dict], row: int,
 
 
 def _parse_int(value: str, field: str, errors: List[Dict], row: int,
-               minimum: Optional[int] = None, required: bool = False) -> Optional[int]:
+               minimum: Optional[int] = None, required: bool = False,
+               maximum: Optional[int] = None) -> Optional[int]:
     parsed = _parse_float(value, field, errors, row, required=required)
     if parsed is None:
         return None
@@ -84,6 +85,12 @@ def _parse_int(value: str, field: str, errors: List[Dict], row: int,
     if minimum is not None and result < minimum:
         errors.append({"row": row, "field": field,
                        "message": "%s must be at least %d" % (field, minimum)})
+        return None
+    # An unbounded integer (e.g. 1e308 bedrooms) overflows the database
+    # integer type into a 500; reject it as a row error instead.
+    if maximum is not None and result > maximum:
+        errors.append({"row": row, "field": field,
+                       "message": "%s must be at most %d" % (field, maximum)})
         return None
     return result
 
@@ -153,9 +160,9 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
                                    required=True, strictly_positive=True,
                                    maximum=1_000_000)
         bedrooms = _parse_int(row.get("bedrooms", ""), "bedrooms", row_errors, idx,
-                              minimum=0, required=True)
+                              minimum=0, required=True, maximum=50)
         bathrooms = _parse_float(row.get("bathrooms", ""), "bathrooms", row_errors, idx,
-                                 minimum=0, required=True)
+                                 minimum=0, required=True, maximum=50)
 
         latitude = _parse_float(row.get("latitude", ""), "latitude", row_errors, idx)
         if latitude is not None and not -90 <= latitude <= 90:
@@ -176,9 +183,9 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
                                "message": "year_built %d is out of range" % year_built})
             year_built = None
         parking_spaces = _parse_int(row.get("parking_spaces", ""), "parking_spaces",
-                                    row_errors, idx, minimum=0)
+                                    row_errors, idx, minimum=0, maximum=50)
         distance = _parse_float(row.get("distance_from_subject", ""), "distance_from_subject",
-                                row_errors, idx, minimum=0)
+                                row_errors, idx, minimum=0, maximum=20_000)
 
         condition = row.get("condition", "").lower() or None
         if condition is not None and condition not in CONDITION_SCALE:

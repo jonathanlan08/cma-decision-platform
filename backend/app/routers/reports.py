@@ -124,20 +124,24 @@ def generate_report(cma_id: int, db: Session = Depends(get_db)):
 
     # Consistency gate: a seller-facing report must come from one coherent
     # state. Stale outputs are rejected instead of silently mixed with
-    # current inputs.
-    if valuation_staleness(cma, valuation):
+    # current inputs. Unknown provenance (None: rows migrated from before
+    # fingerprinting) FAILS CLOSED: it cannot be verified, so it must be
+    # recalculated, not trusted.
+    if valuation_staleness(cma, valuation) is not False:
         raise HTTPException(
             status_code=409,
-            detail="Inputs have changed since the valuation was calculated. "
-            "Recalculate the valuation (and regenerate strategies) before "
-            "generating a report.",
+            detail="The valuation cannot be verified against the current inputs "
+            "(they changed, or it predates provenance tracking). Recalculate "
+            "the valuation (and regenerate strategies) before generating a "
+            "report.",
         )
-    if suggestions_outdated(cma, config):
+    if suggestions_outdated(cma, config) is not False:
         raise HTTPException(
             status_code=409,
-            detail="The suggested adjustments were generated from an earlier "
-            "assumption set. Regenerate suggested adjustments, recalculate the "
-            "valuation, and refresh strategies before generating a report.",
+            detail="The suggested adjustments cannot be verified against the "
+            "current data (it changed, or they predate provenance tracking). "
+            "Regenerate suggested adjustments, recalculate the valuation, and "
+            "refresh strategies before generating a report.",
         )
     if any(s.updated_at < valuation.created_at for s in cma.strategies):
         raise HTTPException(

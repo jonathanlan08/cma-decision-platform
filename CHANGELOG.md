@@ -2,6 +2,21 @@
 
 ## Unreleased
 
+- **Fail-closed provenance and repair completeness** (2026-08-09):
+  - The one-click "Refresh the full analysis" button now regenerates
+    outdated suggested adjustments before recalculating the valuation and
+    strategies, so the repair actually clears the report gate.
+  - Unknown provenance fails closed: valuations and suggestions whose
+    fingerprints predate provenance tracking (null after migration) now
+    block strategy generation and reports with 409 until recalculated,
+    instead of silently passing.
+  - CSV integer fields gained maximum caps (bedrooms/parking ≤ 50,
+    bathrooms ≤ 50, distance ≤ 20,000 mi): bedrooms=1e308 is a row error
+    now, not a database overflow 500.
+  - Fingerprints normalize numeric types (1850 vs 1850.0 hash identically),
+    fixing false staleness after SQLite/JSON round-trips.
+  - Test counts corrected across docs (121 backend / 36 frontend).
+
 - **Full calculation provenance** (2026-08-09):
   - The suggestion-outdatedness check now fingerprints ALL inputs that shape
     suggested amounts: assumptions, the subject's priced fields, and every

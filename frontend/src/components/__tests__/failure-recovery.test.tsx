@@ -13,12 +13,20 @@ import { makeComparable } from "./fixtures";
 
 vi.mock("@/lib/api", () => ({
   api: {
+    getConfig: vi.fn(),
+    suggestAdjustments: vi.fn().mockResolvedValue([]),
     recalcValuation: vi.fn().mockResolvedValue({}),
     generateStrategies: vi.fn().mockResolvedValue([]),
   },
   ApiError: class ApiError extends Error {},
 }));
 import { api } from "@/lib/api";
+import type { Config } from "@/lib/types";
+
+const mockConfig = (suggestions_outdated: boolean | null): Config => ({
+  weights: {}, similarity_params: {}, assumptions: {}, reconciliation: {},
+  updated_at: "2026-08-01T00:00:00Z", suggestions_outdated,
+});
 
 function makeCma(overrides: Partial<CMADetail> = {}): CMADetail {
   return {
@@ -131,9 +139,11 @@ describe("StaleBanner", () => {
       .toHaveAttribute("href", "/cma/1/valuation");
   });
 
-  it("repairs the stale state in one click", async () => {
+  it("repairs the stale state in one click (suggestions current)", async () => {
     const user = userEvent.setup();
     const onRefreshed = vi.fn();
+    vi.mocked(api.getConfig).mockResolvedValueOnce(mockConfig(false));
+    vi.mocked(api.suggestAdjustments).mockClear();
     render(
       <StaleBanner
         cma={makeCma({ latest_valuation: staleValuation })}
@@ -141,9 +151,32 @@ describe("StaleBanner", () => {
       />,
     );
     await user.click(
-      screen.getByRole("button", { name: /recalculate valuation/i }),
+      screen.getByRole("button", { name: /refresh the full analysis/i }),
     );
     await waitFor(() => expect(onRefreshed).toHaveBeenCalled());
+    // Current suggestions are left alone; only valuation + strategies refresh.
+    expect(api.suggestAdjustments).not.toHaveBeenCalled();
+    expect(api.recalcValuation).toHaveBeenCalledWith(1);
+    expect(api.generateStrategies).toHaveBeenCalledWith(1);
+  });
+
+  it("also regenerates suggestions when they are outdated", async () => {
+    const user = userEvent.setup();
+    const onRefreshed = vi.fn();
+    vi.mocked(api.getConfig).mockResolvedValueOnce(mockConfig(true));
+    vi.mocked(api.suggestAdjustments).mockClear();
+    render(
+      <StaleBanner
+        cma={makeCma({ latest_valuation: staleValuation })}
+        onRefreshed={onRefreshed}
+      />,
+    );
+    await user.click(
+      screen.getByRole("button", { name: /refresh the full analysis/i }),
+    );
+    await waitFor(() => expect(onRefreshed).toHaveBeenCalled());
+    // Outdated suggestions are regenerated FIRST, then valuation, strategies.
+    expect(api.suggestAdjustments).toHaveBeenCalledWith(1);
     expect(api.recalcValuation).toHaveBeenCalledWith(1);
     expect(api.generateStrategies).toHaveBeenCalledWith(1);
   });

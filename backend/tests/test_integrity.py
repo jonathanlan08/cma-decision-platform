@@ -285,7 +285,7 @@ def test_outdated_suggestions_flagged_and_block_report(client):
     assert "outdated_suggestions" in codes
     response = client.post("/api/cmas/%d/report" % cma_id)
     assert response.status_code == 409
-    assert "assumption set" in response.json()["detail"]
+    assert "Regenerate suggested adjustments" in response.json()["detail"]
 
     # Regenerating suggestions clears the flag and unblocks the chain.
     client.post("/api/cmas/%d/adjustments/suggest" % cma_id)
@@ -451,3 +451,51 @@ def test_seeded_demo_has_clean_provenance(client):
     cma_id = _prepare_valued_cma(client)
     assert client.get("/api/cmas/%d/config" % cma_id).json()[
         "suggestions_outdated"] is False
+
+
+# --- Fourth audit round: CSV integer caps, fail-closed legacy provenance -----
+
+def test_csv_rejects_absurd_integer_values(client):
+    """bedrooms=1e308 must be a row error, not a database overflow 500."""
+    cma_id = create_cma(client, "Absurd bedrooms")
+    text = (
+        CSV_HEADER + "\n"
+        "1 Big Bed St,900000,2026-04-01,1500,1e308,2\n"
+        "2 Ok St,900000,2026-04-01,1500,3,2\n"
+    )
+    response = client.post(
+        "/api/cmas/%d/comparables/import-csv" % cma_id,
+        files={"file": ("beds.csv", text.encode(), "text/csv")})
+    assert response.status_code == 200
+    result = response.json()
+    assert result["imported_count"] == 1
+    assert result["errors"][0]["field"] == "bedrooms"
+    assert "at most" in result["errors"][0]["message"]
+
+
+def test_legacy_rows_without_fingerprints_fail_closed(client):
+    """Rows migrated from before provenance tracking cannot be verified, so
+    strategy generation and reports must require recalculation, not succeed."""
+    from app.database import SessionLocal
+    from app.models import CMAAnalysis
+
+    cma_id = _prepare_valued_cma(client)
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+    # Simulate pre-fingerprint history.
+    db = SessionLocal()
+    cma = db.get(CMAAnalysis, cma_id)
+    cma.valuations[-1].input_fingerprint = None
+    cma.weight_config.suggestions_fingerprint = None
+    db.commit()
+    db.close()
+
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 409
+    assert client.post("/api/cmas/%d/strategies/generate" % cma_id).status_code == 409
+
+    # The normal repair chain restores verifiable provenance.
+    client.post("/api/cmas/%d/adjustments/suggest" % cma_id)
+    client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201

@@ -26,6 +26,12 @@ export function StaleBanner({
     setBusy(true);
     setError(null);
     try {
+      // Full repair chain. Outdated suggested adjustments must be regenerated
+      // FIRST, or the recalculated valuation still fails the report gate.
+      const config = await api.getConfig(cma.id);
+      if (config.suggestions_outdated !== false) {
+        await api.suggestAdjustments(cma.id);
+      }
       await api.recalcValuation(cma.id);
       await api.generateStrategies(cma.id);
       onRefreshed?.();
@@ -49,7 +55,7 @@ export function StaleBanner({
           disabled={busy}
           onClick={refresh}
         >
-          {busy ? "Refreshing…" : "Recalculate valuation & refresh strategies"}
+          {busy ? "Refreshing…" : "Refresh the full analysis"}
         </button>
         <span>
           or review it on the{" "}
