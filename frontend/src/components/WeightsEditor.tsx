@@ -27,7 +27,7 @@ export function WeightsEditor({
       aria-label="Similarity component weights"
     >
       <p className="mb-3 text-xs text-slate-500">
-        These weights are settings for <em>this analysis only</em> — demonstration
+        These weights are settings for <em>this analysis only</em>: demonstration
         defaults, not appraisal standards. They are renormalized over the components that
         can actually be computed. Changes are recorded in the audit trail.
       </p>

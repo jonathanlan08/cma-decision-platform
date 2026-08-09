@@ -14,7 +14,7 @@ const plexSans = localFont({
 export const metadata: Metadata = {
   title: "CMA Decision Platform",
   description:
-    "Transparent comparative market analysis and listing strategy for residential agents. Educational demo — not an appraisal tool.",
+    "Transparent comparative market analysis and listing strategy for residential agents. Educational demo, not an appraisal tool.",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -57,7 +57,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                 How to use
               </Link>
               <span className="rounded-full border border-amber-300 bg-amber-50 px-2.5 py-1 text-xxs font-medium text-amber-800">
-                Educational demo — not an appraisal
+                Educational demo (not an appraisal)
               </span>
             </div>
           </div>

@@ -149,5 +149,5 @@ def download_report(report_id: int, db: Session = Depends(get_db)):
     return HTMLResponse(content=report.content_html)
 
 
-# CMA_STATUSES imported for OpenAPI docs completeness — re-exported via /api/meta.
+# CMA_STATUSES imported for OpenAPI docs completeness; re-exported via /api/meta.
 _ = CMA_STATUSES

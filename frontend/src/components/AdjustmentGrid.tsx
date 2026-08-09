@@ -81,7 +81,7 @@ export function AdjustmentGrid({
             {comparable.adjustments.length === 0 && (
               <tr>
                 <td colSpan={8} className="text-center text-slate-400">
-                  No adjustments — the comparable matches the subject on every priced
+                  No adjustments. The comparable matches the subject on every priced
                   characteristic, or suggestions have not been generated yet.
                 </td>
               </tr>

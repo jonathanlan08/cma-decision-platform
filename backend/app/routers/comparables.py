@@ -151,7 +151,7 @@ def update_selection(comp_id: int, payload: SelectionUpdate, db: Session = Depen
             log_event(db, comp.cma_id, "comparable_excluded",
                       "Excluded comparable %s%s." % (
                           comp.address,
-                          " — reason: %s" % changes["exclusion_reason"]
+                          " (reason: %s)" % changes["exclusion_reason"]
                           if changes.get("exclusion_reason") else "",
                       ),
                       entity_type="comparable", entity_id=comp.id,

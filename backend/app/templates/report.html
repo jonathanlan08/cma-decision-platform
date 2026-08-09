@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>Comparative Market Analysis — {{ subject.address if subject else title }}</title>
+<title>Comparative Market Analysis: {{ subject.address if subject else title }}</title>
 <style>
   :root { --ink: #1a202c; --muted: #64748b; --accent: #1d4ed8; --line: #e2e8f0;
           color-scheme: light; }
@@ -60,7 +60,7 @@
     {% endif %}
     <p class="muted small">Prepared {{ generated_on }} · Methodology {{ calc_version }}</p>
     <p class="muted small" style="margin-top:0.8in;max-width:5in;margin-left:auto;margin-right:auto;">
-      Informational estimate for discussion purposes — not an appraisal.
+      Informational estimate for discussion purposes, not an appraisal.
       See the assumptions and limitations section at the end of this report.</p>
   </div>
 
@@ -88,7 +88,7 @@
   brokerage. Recently sold, similar properties are selected and scored for
   similarity across {{ weights | length }} weighted factors (location, size,
   type, recency, and features). Each comparable's sale price is then adjusted
-  for measurable differences from the subject — when a comparable is inferior
+  for measurable differences from the subject: when a comparable is inferior
   to the subject the price adjusts upward; when superior it adjusts downward.
   The adjusted values are reconciled into a value range using the similarity
   weights shown below. Every adjustment amount comes from the stated assumption
@@ -118,7 +118,7 @@
         <td class="num">{{ "%.1f" | format(c.bathrooms) }}</td>
         <td class="num">{{ "%.2f" | format(c.distance) if c.distance is not none else "—" }}</td>
         <td class="num">{{ "%.0f" | format(c.similarity) if c.similarity is not none else "—" }}</td>
-        <td>{{ "Included" if c.included else "Excluded" }}{% if c.exclusion_reason %} — {{ c.exclusion_reason }}{% endif %}</td>
+        <td>{{ "Included" if c.included else "Excluded" }}{% if c.exclusion_reason %} ({{ c.exclusion_reason }}){% endif %}</td>
       </tr>
     {% endfor %}
     </tbody>
@@ -129,7 +129,7 @@
 
   <h2>Adjustments</h2>
   {% for c in included %}
-    <h3>{{ c.address }} — sold {{ c.sale_price | money }} on {{ c.sale_date }}</h3>
+    <h3>{{ c.address }} · sold {{ c.sale_price | money }} on {{ c.sale_date }}</h3>
     {% if c.adjustments %}
     <table>
       <thead><tr>
@@ -182,7 +182,7 @@
   <div class="range-box">
     <p class="muted small" style="margin:0;">Indicated value range (analytical estimate)</p>
     <p class="central">{{ valuation.central_estimate | money }}</p>
-    <p style="margin:0;">{{ valuation.low_estimate | money }} — {{ valuation.high_estimate | money }}</p>
+    <p style="margin:0;">{{ valuation.low_estimate | money }} – {{ valuation.high_estimate | money }}</p>
     <p class="muted small" style="margin:4pt 0 0;">
       Median adjusted value {{ valuation.median_adjusted | money }}
       {% if valuation.weighted_ppsf %} · Weighted {{ valuation.weighted_ppsf | money }}/sq ft{% endif %}
@@ -228,7 +228,7 @@
     </tbody>
   </table>
   <p class="small muted">These are analysis-specific sample assumptions entered or
-  accepted by the preparing agent — not market standards. Changing any of them
+  accepted by the preparing agent, not market standards. Changing any of them
   changes the result; all changes are recorded in the analysis audit trail.</p>
 
   <div class="disclaimer">

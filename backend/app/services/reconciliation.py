@@ -33,7 +33,7 @@ def reconcile(items: List[Dict], params: Dict, as_of: Optional[date] = None) -> 
             "cov": None, "included_count": 0, "per_comparable": [],
             "warnings": [{
                 "code": "no_comparables",
-                "message": "No comparables are included — a valuation cannot be calculated.",
+                "message": "No comparables are included, so a valuation cannot be calculated.",
             }],
         }
 

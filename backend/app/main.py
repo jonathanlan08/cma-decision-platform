@@ -16,7 +16,7 @@ app = FastAPI(
     description=(
         "Transparent Comparative Market Analysis engine. Every valuation is "
         "reproducible from stored inputs: similarity breakdowns, adjustment "
-        "math, weights, and an append-only audit trail. Educational project — "
+        "math, weights, and an append-only audit trail. Educational project, "
         "not an appraisal tool."
     ),
 )

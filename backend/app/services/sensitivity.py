@@ -5,7 +5,7 @@ suggested-adjustment + reconciliation pipeline with each assumption varied
 ±variation_pct (relative), one at a time.
 
 Semantics, deliberately transparent:
-  * Manual adjustments are held fixed — only assumption-driven suggested
+  * Manual adjustments are held fixed; only assumption-driven suggested
     amounts are recomputed for each variation.
   * The baseline is recomputed the same way (manual + fresh suggestions from
     the current assumptions), so baseline and variations are always

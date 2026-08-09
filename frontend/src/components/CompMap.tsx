@@ -6,7 +6,7 @@ import { money } from "@/lib/format";
 
 // Dependency-free proximity plot: subject at the center, comparables placed by
 // their coordinates, with distance rings in miles. Deliberately not a tile
-// map — no external servers, no licensing, works offline — while still
+// map (no external servers, no licensing, works offline) while still
 // answering the question a map answers during comp selection: "how far, and
 // in which direction?" The comparables table remains the accessible source
 // of the same data.
@@ -78,7 +78,7 @@ export function CompMap({
   if (points.length === 0) {
     return (
       <p className="rounded-md border border-dashed border-slate-300 bg-slate-50 px-4 py-6 text-center text-sm text-slate-500">
-        No comparables have coordinates yet — the proximity map will appear once
+        No comparables have coordinates yet. The proximity map will appear once
         they do.
       </p>
     );
@@ -145,7 +145,7 @@ export function CompMap({
               strokeWidth={extent / 300}
             >
               <title>
-                {`${p.comp.address} — ${money(p.comp.sale_price)}, ` +
+                {`${p.comp.address}: ${money(p.comp.sale_price)}, ` +
                   `${Math.hypot(p.x, p.y).toFixed(2)} mi` +
                   (p.similarity !== null
                     ? `, similarity ${p.similarity.toFixed(0)}`

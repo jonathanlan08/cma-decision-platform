@@ -4,7 +4,7 @@ Each component maps a subject/comparable attribute pair onto a 0-100 score with
 a documented linear curve. The overall score is the weighted average of the
 available components, with weights renormalized when a component cannot be
 computed (missing data) so the score stays on a 0-100 scale. The full breakdown
-— per-component raw values, scores, effective weights, and contributions — is
+(per-component raw values, scores, effective weights, and contributions) is
 returned and stored so no number is ever a black box.
 
 All curves and weights come from the per-CMA WeightConfiguration; defaults live

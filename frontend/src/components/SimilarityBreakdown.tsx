@@ -3,12 +3,12 @@
 import type { SimilarityBreakdown as Breakdown } from "@/lib/types";
 import { titleCase } from "@/lib/format";
 
-// Per-component score table with visual bars — the "show the work" view.
+// Per-component score table with visual bars: the "show the work" view.
 export function SimilarityBreakdown({ breakdown }: { breakdown: Breakdown }) {
   return (
     <div className="rounded-md border border-slate-200 bg-slate-50 p-3">
       <h4 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-600">
-        Similarity breakdown — total {breakdown.score ?? "n/a"} / 100 (as of {breakdown.as_of})
+        Similarity breakdown: total {breakdown.score ?? "n/a"} / 100 (as of {breakdown.as_of})
       </h4>
       <div className="overflow-x-auto">
         <table className="data-table bg-white">
@@ -40,7 +40,7 @@ export function SimilarityBreakdown({ breakdown }: { breakdown: Breakdown }) {
                 </td>
                 <td className="num">
                   {c.missing ? (
-                    <span title="Data missing — excluded from the score">missing</span>
+                    <span title="Data missing, excluded from the score">missing</span>
                   ) : (
                     <span className="inline-flex items-center gap-1.5">
                       <span

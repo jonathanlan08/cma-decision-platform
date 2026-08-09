@@ -82,7 +82,7 @@ DEFAULT_RECONCILIATION = {
 }
 
 # --- Listing strategy heuristics --------------------------------------------
-# Deterministic scenario heuristics (NOT validated predictions — see METHODOLOGY.md).
+# Deterministic scenario heuristics (NOT validated predictions; see METHODOLOGY.md).
 STRATEGY_DEFAULTS = [
     {
         "key": "market_entry",

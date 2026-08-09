@@ -20,7 +20,7 @@ export default function SubjectPage() {
     try {
       await api.saveSubject(cma.id, values);
       if (cma.title === "Untitled CMA" && values.address.trim()) {
-        await api.updateCma(cma.id, { title: `CMA — ${values.address.trim()}` });
+        await api.updateCma(cma.id, { title: `CMA: ${values.address.trim()}` });
       }
       reload();
       setSaved(true);
@@ -35,7 +35,7 @@ export default function SubjectPage() {
     <Card title="Subject property">
       <p className="mb-4 text-sm text-slate-500">
         Details about the property being valued. The more complete this is, the more
-        similarity components and suggested adjustments can be calculated — missing
+        similarity components and suggested adjustments can be calculated; missing
         fields are skipped, never guessed.
       </p>
       {error && <ErrorBox message={error} />}

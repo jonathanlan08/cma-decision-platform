@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 export const metadata: Metadata = {
-  title: "How to use — CMA Decision Platform",
+  title: "How to use | CMA Decision Platform",
   description:
     "Step-by-step guide to building a transparent comparative market analysis: subject, comparables, adjustments, valuation, strategies, and the audit trail.",
 };
@@ -41,32 +41,32 @@ function Term({ name, children }: { name: string; children: React.ReactNode }) {
 const STEPS = [
   {
     title: "1 · Subject property",
-    body: "Describe the home being valued. Only the address is required, but every field you add unlocks more of the analysis: coordinates enable real distances, square footage enables size scoring and $/sq ft, condition enables condition comparisons. Missing data is simply skipped — the tool never guesses.",
+    body: "Describe the home being valued. Only the address is required, but every field you add unlocks more of the analysis: coordinates enable real distances, square footage enables size scoring and $/sq ft, condition enables condition comparisons. Missing data is simply skipped; the tool never guesses.",
     tip: "Agent notes are private working notes; they never appear in the seller report.",
   },
   {
     title: "2 · Comparables",
-    body: "Add recently sold, similar properties — upload a CSV (download the template from this screen) or type them in. Rows with problems are rejected individually with a message telling you the row and field; the rest import normally. Then press “Recalculate similarity”: every comp gets a 0–100 score, and clicking the score shows exactly how it was built, component by component.",
-    tip: "Exclude weak comps rather than deleting them, and write a reason — the exclusion and reason go into the audit trail, which is exactly what you want to show a skeptical seller.",
+    body: "Add recently sold, similar properties. Upload a CSV (download the template from this screen) or type them in. Rows with problems are rejected individually with a message telling you the row and field; the rest import normally. Then press “Recalculate similarity”: every comp gets a 0–100 score, and clicking the score shows exactly how it was built, component by component.",
+    tip: "Exclude weak comps rather than deleting them, and write a reason. The exclusion and reason go into the audit trail, which is exactly what you want to show a skeptical seller.",
   },
   {
     title: "3 · Adjustments",
     body: "The tool suggests dollar adjustments for measurable differences (size, time since sale, condition, pool…) using the assumption values shown at the top of the screen. The direction rule is the standard one: if the comp is worse than your subject, its price adjusts up; if it's better, down. Every suggested amount shows its arithmetic.",
-    tip: "The default assumptions are demonstration samples. Set them from your market knowledge before relying on the result — that's the single most important step in the whole workflow.",
+    tip: "The default assumptions are demonstration samples. Set them from your market knowledge before relying on the result. That's the single most important step in the whole workflow.",
   },
   {
     title: "4 · Valuation",
-    body: "Included comps are blended into a central estimate — each one weighted by its similarity score times your optional per-comp multiplier — plus a low–high range based on how much the adjusted values disagree. The influence table shows exactly what percentage of the answer came from each comp, and the sensitivity panel shows which assumptions actually move the number.",
+    body: "Included comps are blended into a central estimate (each one weighted by its similarity score times your optional per-comp multiplier), plus a low–high range based on how much the adjusted values disagree. The influence table shows exactly what percentage of the answer came from each comp, and the sensitivity panel shows which assumptions actually move the number.",
     tip: "Read the warnings. “Only 2 comps”, “large adjustments”, or “possible outlier” are the tool telling you where the analysis is thin.",
   },
   {
     title: "5 · Strategies",
-    body: "Three list-price scenarios — below market, at market, above market — with qualitative buyer-interest and price-reduction-risk labels derived from documented thresholds. Edit any price to model your own scenario; the labels update instantly.",
+    body: "Three list-price scenarios (below market, at market, above market) with qualitative buyer-interest and price-reduction-risk labels derived from documented thresholds. Edit any price to model your own scenario; the labels update instantly.",
     tip: "These are conversation aids, not predictions. The platform deliberately makes no days-on-market or sale-probability claims.",
   },
   {
     title: "6 · Report",
-    body: "Generates the seller-facing document: subject summary, methodology explanation, comparable sales, the full adjustment grids, reconciliation, strategy comparison, assumptions, and the limitations disclaimer. It opens print-ready — use your browser's Print → Save as PDF.",
+    body: "Generates the seller-facing document: subject summary, methodology explanation, comparable sales, the full adjustment grids, reconciliation, strategy comparison, assumptions, and the limitations disclaimer. It opens print-ready; use your browser's Print → Save as PDF.",
     tip: "Each report records which methodology version produced it, so an old report can always be traced.",
   },
   {
@@ -84,7 +84,7 @@ export default function GuidePage() {
         A comparative market analysis (CMA) is the argument behind a list price:
         similar sold homes, adjusted for their differences, reconciled into a range.
         This tool makes every step of that argument visible and editable. It is an
-        educational, open-source project — not an appraisal — and every default
+        educational, open-source project, not an appraisal, and every default
         number in it is a sample assumption you are expected to review.
       </p>
 
@@ -114,7 +114,7 @@ export default function GuidePage() {
           <p>
             Start on the dashboard with <strong>Create new CMA</strong>, then work
             left to right through the steps. Green checks show which steps already
-            contain data — you can revisit any step at any time.
+            contain data, and you can revisit any step at any time.
           </p>
           <ol className="space-y-4">
             {STEPS.map((step) => (
@@ -151,9 +151,9 @@ export default function GuidePage() {
             <code className="rounded bg-slate-100 px-1">bathrooms</code>
           </p>
           <p>
-            Everything else — city, ZIP, latitude/longitude, lot size, year built,
+            Everything else (city, ZIP, latitude/longitude, lot size, year built,
             condition (poor/fair/average/good/excellent), parking, pool (true/false),
-            distance, notes, source — is optional and simply enriches the analysis.
+            distance, notes, source) is optional and simply enriches the analysis.
             Dollar signs and commas in prices are fine. If some rows fail, the valid
             ones still import and you get a per-row list of what to fix.
           </p>
@@ -162,7 +162,7 @@ export default function GuidePage() {
         <Section id="numbers" title="Understanding the numbers">
           <dl className="grid gap-3 sm:grid-cols-2">
             <Term name="Similarity score (0–100)">
-              A weighted blend of nine comparisons — distance, size, type, sale
+              A weighted blend of nine comparisons: distance, size, type, sale
               recency, beds, baths, lot, age, condition. Click any score to see each
               component&apos;s inputs, weight, and contribution. Weights are settings you
               can change per analysis.
@@ -174,7 +174,7 @@ export default function GuidePage() {
               as your manual override.
             </Term>
             <Term name="Adjusted value">
-              The comp&apos;s sale price plus all its adjustments — an estimate of what
+              The comp&apos;s sale price plus all its adjustments: an estimate of what
               that comp would have sold for if it were your subject.
             </Term>
             <Term name="Influence %">
@@ -184,7 +184,7 @@ export default function GuidePage() {
             <Term name="Central estimate & range">
               The weighted average of adjusted values, with a band of ± k standard
               deviations (k is the “range width” setting). It is an analytical
-              estimate — not a statistical confidence interval, and not an appraisal.
+              estimate, not a statistical confidence interval, and not an appraisal.
             </Term>
             <Term name="Sensitivity">
               What happens to the central estimate when each assumption moves ±20%.
@@ -203,10 +203,10 @@ export default function GuidePage() {
             </Term>
             <Term name="Can I trust the suggested adjustment amounts?">
               They are computed honestly from the assumption values on the
-              adjustments screen — but those defaults are demonstration samples.
+              adjustments screen, but those defaults are demonstration samples.
               Replace them with values from your market before presenting anything.
             </Term>
-            <Term name="A comp seems wrong — delete or exclude?">
+            <Term name="A comp seems wrong: delete or exclude?">
               Exclude, with a reason. Deletion removes the record; exclusion keeps
               it visible and documents your judgment in the audit trail.
             </Term>
@@ -216,7 +216,7 @@ export default function GuidePage() {
               synthetic.
             </Term>
             <Term name="Can I use real MLS data?">
-              If you hold the license for it, yes — export it yourself and upload
+              If you hold the license for it, yes: export it yourself and upload
               the CSV. Your data stays in your local database. Never commit real
               records to the public repository.
             </Term>
@@ -227,7 +227,7 @@ export default function GuidePage() {
           <p>
             This is an educational, open-source project. Its outputs are
             informational analytical estimates built from your inputs and
-            user-reviewed assumptions — not appraisals, and not a substitute for a
+            user-reviewed assumptions, not appraisals, and not a substitute for a
             qualified professional&apos;s judgment. Do not upload confidential client
             records or data you are not licensed to use, and review every number
             before it reaches a client.

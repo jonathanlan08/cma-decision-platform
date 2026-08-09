@@ -4,7 +4,7 @@ from pathlib import Path
 
 
 def _load_dotenv() -> None:
-    """Minimal .env loader (repo root or backend/) — avoids an extra dependency."""
+    """Minimal .env loader (repo root or backend/); avoids an extra dependency."""
     for candidate in (Path(__file__).resolve().parents[2] / ".env",
                       Path(__file__).resolve().parents[1] / ".env"):
         if candidate.is_file():

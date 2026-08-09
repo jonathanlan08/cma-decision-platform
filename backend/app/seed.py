@@ -3,7 +3,7 @@
 Run from backend/:  python -m app.seed
 Idempotent: skips seeding if the demo CMA already exists.
 
-All data is synthetic (see data/sample/README.md) — no real sales, clients,
+All data is synthetic (see data/sample/README.md): no real sales, clients,
 or confidential information.
 """
 from pathlib import Path
@@ -15,7 +15,7 @@ from .routers.helpers import ensure_config, ensure_selection, refresh_similarity
 from .services.adjustments import suggest_adjustments
 from .services.audit import log_event
 
-DEMO_TITLE = "Demo CMA — 12345 Demo Lane, Arcadia (synthetic data)"
+DEMO_TITLE = "Demo CMA: 12345 Demo Lane, Arcadia (synthetic data)"
 SAMPLE_CSV = Path(__file__).resolve().parents[2] / "data" / "sample" / "comparables_sample.csv"
 
 
@@ -24,7 +24,7 @@ def seed() -> None:
     db = SessionLocal()
     try:
         if db.query(CMAAnalysis).filter(CMAAnalysis.title == DEMO_TITLE).first():
-            print("Demo CMA already exists — nothing to do.")
+            print("Demo CMA already exists; nothing to do.")
             return
 
         user = db.query(User).filter(User.email == "demo@example.com").first()

@@ -7,7 +7,7 @@ Standard sales-comparison direction, applied consistently:
 Every suggested adjustment records the subject value, the comparable value, the
 unit math that produced the dollar amount, and a plain-language explanation.
 Suggested amounts come from the per-CMA assumption set (sample values requiring
-user review — never presented as market standards). Users can edit or delete
+user review, never presented as market standards). Users can edit or delete
 any adjustment; edits are re-flagged as manual and audit-logged by the API layer.
 """
 from datetime import date
@@ -32,7 +32,7 @@ def suggest_adjustments(
     as_of = as_of or date.today()
     out: List[Dict] = []
 
-    # Time / market movement — comp sold in the past; in a rising market an
+    # Time / market movement: comp sold in the past; in a rising market an
     # older sale understates today's value, so the comp adjusts upward.
     months = months_between(comp.sale_date, as_of)
     monthly_pct = assumptions.get("monthly_market_pct", 0.0)
@@ -46,7 +46,7 @@ def suggest_adjustments(
             % (months, monthly_pct * 100, _fmt_money(comp.sale_price)),
             "amount": round(amount, 2),
             "explanation": "Assumed market movement of %.2f%% per month over %.1f months "
-            "since the comparable sold. Sample assumption — review against local data."
+            "since the comparable sold. Sample assumption; review against local data."
             % (monthly_pct * 100, months),
         })
 

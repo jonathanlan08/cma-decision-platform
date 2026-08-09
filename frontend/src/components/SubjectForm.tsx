@@ -221,7 +221,7 @@ export function SubjectForm({
         <Field
           id="subject-latitude"
           label="Latitude"
-          hint="Optional — enables distance-based similarity."
+          hint="Optional; enables distance-based similarity."
           error={errors.latitude}
         >
           <input

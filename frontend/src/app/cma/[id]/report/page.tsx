@@ -55,7 +55,7 @@ export default function ReportPage() {
         Produces a print-ready report: subject summary, methodology, comparable sales,
         the full adjustment grid, value reconciliation, strategy comparison, assumptions,
         and the limitations disclaimer. When server-side PDF conversion (WeasyPrint) is
-        installed the download is a PDF; otherwise it opens as print-optimized HTML — use
+        installed the download is a PDF; otherwise it opens as print-optimized HTML, so use
         your browser&apos;s “Print → Save as PDF”.
       </p>
       {!cma.subject && (

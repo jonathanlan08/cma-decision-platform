@@ -116,7 +116,7 @@ export default function ComparablesPage() {
         {!cma.subject && (
           <WarningBox>
             Enter the <Link href={`/cma/${cma.id}/subject`} className="underline">subject
-            property</Link> first — similarity scoring needs it.
+            property</Link> first; similarity scoring needs it.
           </WarningBox>
         )}
         {error && <ErrorBox message={error} onRetry={load} />}

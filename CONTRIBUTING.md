@@ -1,6 +1,6 @@
 # Contributing
 
-Thanks for your interest! This project is a transparent CMA engine — the
+Thanks for your interest! This project is a transparent CMA engine, and the
 contribution rules exist to protect that transparency.
 
 ## Ground rules
@@ -12,7 +12,7 @@ contribution rules exist to protect that transparency.
 2. **Calculation changes are versioned.** If you change any behavior in
    `backend/app/services/`, bump `CALC_VERSION` in `backend/app/constants.py`
    and update `docs/METHODOLOGY.md` in the same PR. Tests enforce the documented
-   behavior — change both together.
+   behavior; change both together.
 3. **No real data.** Sample/fixture data must be clearly synthetic. Never commit
    real sales records, client addresses, MLS exports, credentials, or API keys.
 4. **No ToS violations.** Scrapers or integrations that bypass authentication,
@@ -36,15 +36,15 @@ npm test && npm run lint && npm run typecheck
 
 - Branch from `main`; keep PRs focused.
 - Fill in the PR template checklist (tests, lint, methodology sync, no secrets).
-- Add tests for new behavior — calculation edge cases especially (missing data,
+- Add tests for new behavior, calculation edge cases especially (missing data,
   zero/invalid inputs, single-item collections, extreme values).
-- UI work: keep the accessibility bar — labeled controls, visible focus,
-  `role="alert"` for errors, table semantics, text alternatives for charts.
+- UI work: keep the accessibility bar (labeled controls, visible focus,
+  `role="alert"` for errors, table semantics, text alternatives for charts).
 
 ## Reporting bugs
 
 Use the bug template. For calculation bugs, include the similarity breakdown /
-adjustment grid / audit trail contents — that's what they're for.
+adjustment grid / audit trail contents. That's what they're for.
 
 ## Code style
 

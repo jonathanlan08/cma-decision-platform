@@ -1,6 +1,6 @@
 """Listing strategy scenarios.
 
-Deterministic, documented heuristics — scenario estimates, NOT validated
+Deterministic, documented heuristics: scenario estimates, NOT validated
 predictions of days-on-market or sale probability. Buyer interest and
 price-reduction risk are qualitative levels derived from the list price's
 percentage distance from the central estimate (thresholds in constants.py).

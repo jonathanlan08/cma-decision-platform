@@ -55,10 +55,10 @@ export default function AdjustmentsPage() {
 
   return (
     <div className="space-y-4">
-      <Card title="Adjustment assumptions (sample values — review before relying on them)">
+      <Card title="Adjustment assumptions (sample values: review before relying on them)">
         <p className="mb-3 text-sm text-slate-500">
           Suggested adjustments are computed from these per-analysis assumptions. They are
-          demonstration defaults, not market standards — set them from your own market
+          demonstration defaults, not market standards. Set them from your own market
           knowledge. Changes are recorded in the audit trail.
         </p>
         <form

@@ -38,7 +38,7 @@ export function SensitivityPanel({ data }: { data: Sensitivity }) {
       <p className="mb-3 text-sm text-slate-500">
         How much the central estimate moves when each assumption is varied {pctLabel},
         one at a time, largest impact first. Wide bars mean the result leans on that
-        assumption — verify those against your market knowledge first.
+        assumption, so verify those against your market knowledge first.
       </p>
       <div className="overflow-x-auto">
         <table className="data-table">

@@ -23,10 +23,10 @@ hygiene* risks:
 
 ## Known gaps (deliberate, documented)
 
-- **No authentication/authorization** — anyone who can reach the API can read
+- **No authentication/authorization**: anyone who can reach the API can read
   and modify any analysis. Do not deploy this publicly as-is; auth is on the
   roadmap (v0.4) and the schema is ready for it.
-- **No rate limiting** — same deployment caveat.
+- **No rate limiting**: same deployment caveat.
 - SQLite is a local file; protect the host if analyses matter to you.
 
 ## Dependency hygiene

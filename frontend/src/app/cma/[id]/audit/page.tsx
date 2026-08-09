@@ -38,7 +38,7 @@ export default function AuditPage() {
   return (
     <Card title="Audit trail">
       <p className="mb-4 text-sm text-slate-500">
-        Every change that can affect a number in this analysis, newest first — data edits,
+        Every change that can affect a number in this analysis, newest first: data edits,
         inclusion decisions, weight and assumption changes, overrides, recalculations, and
         report generation. Each event records who acted, when, and under which calculation
         version.

@@ -1,7 +1,7 @@
 # CMA Decision Platform
 
 A transparent Comparative Market Analysis (CMA) and listing-strategy platform for
-residential real-estate agents — every number is explainable, every override is
+residential real-estate agents: every number is explainable, every override is
 audited, and nothing is a black box.
 
 ![Valuation screen: value range, dispersion, warnings, and per-comparable influence](screenshots/valuation.png)
@@ -17,37 +17,37 @@ audited, and nothing is a black box.
 Agents preparing a listing presentation need to justify a price to a seller.
 Generic "AI value" tools produce a number without showing the work, which is
 useless in that conversation (and dangerous if trusted). A CMA is fundamentally
-an argument built from evidence — comparable sales, documented adjustments, and
-judgment — and the tooling should make that argument inspectable, not hide it.
+an argument built from evidence (comparable sales, documented adjustments, and
+judgment), and the tooling should make that argument inspectable, not hide it.
 
 ## Key features
 
-- **Subject property & comparables** — manual entry or CSV upload with
+- **Subject property & comparables**: manual entry or CSV upload with
   row-level validation errors (bad rows rejected individually; good rows import).
-- **Transparent similarity scoring** — nine weighted components (proximity,
+- **Transparent similarity scoring**: nine weighted components (proximity,
   living area, type, recency, beds, lot, baths, age, condition), each shown with
   its raw values, curve math, weight, and contribution. Missing data is skipped
   and renormalized, never guessed.
-- **Editable adjustment grid** — suggested adjustments computed from per-analysis
+- **Editable adjustment grid**: suggested adjustments computed from per-analysis
   assumptions with the unit math shown (`300 sq ft × $150/sq ft`); standard
   direction convention (inferior comp ⇒ upward); every edit becomes a flagged
   manual override.
-- **Reconciliation with uncertainty** — weighted central estimate, median,
+- **Reconciliation with uncertainty**: weighted central estimate, median,
   weighted $/sq ft, dispersion-based low–high range, per-comparable influence
   percentages, and explicit warnings (too few comps, outliers, stale sales,
   over-adjusted comps, high dispersion).
-- **Assumption sensitivity** — a tornado view of how much the central estimate
+- **Assumption sensitivity**: a tornado view of how much the central estimate
   moves as each assumption varies ±20%, so users see exactly which inputs the
   result leans on.
-- **Proximity map** — dependency-free SVG plot of comps around the subject with
+- **Proximity map**: dependency-free SVG plot of comps around the subject with
   distance rings (no external tile servers or scraping).
-- **Listing strategy simulator** — Market-Entry / Competitive / Aspirational
+- **Listing strategy simulator**: Market-Entry / Competitive / Aspirational
   scenarios with editable prices and deterministic, documented heuristics for
   buyer-interest and price-reduction-risk labels (no fake DOM predictions).
-- **Seller-facing report** — print-ready document with methodology, comparables,
+- **Seller-facing report**: print-ready document with methodology, comparables,
   adjustment grids, reconciliation, strategies, assumptions, and disclaimer.
   PDF via WeasyPrint when installed; print-optimized HTML otherwise.
-- **Audit trail** — append-only, plain-language log of every inclusion decision,
+- **Audit trail**: append-only, plain-language log of every inclusion decision,
   weight change, assumption change, override, recalculation, and report, each
   stamped with the calculation version.
 
@@ -64,7 +64,7 @@ with `normalized_weight_i = raw_weight_i / Σ raw_weights` and
 `central = Σ (adjusted_i × weight_i)`; the range is `central ± k × weighted std
 dev` and is labeled an analytical estimate, not a confidence interval. The full
 specification with worked examples is in
-[docs/METHODOLOGY.md](docs/METHODOLOGY.md) — the unit tests enforce it.
+[docs/METHODOLOGY.md](docs/METHODOLOGY.md): the unit tests enforce it.
 
 ## Architecture
 
@@ -84,7 +84,7 @@ flowchart LR
 ```
 
 All calculation logic lives in pure, unit-tested functions under
-`backend/app/services/` — route handlers only validate, persist, and audit-log.
+`backend/app/services/`: route handlers only validate, persist, and audit-log.
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
 
 ## Technology stack
@@ -161,8 +161,12 @@ ruff check app tests
 cd frontend && npm test && npm run lint && npm run typecheck
 
 # End-to-end (builds nothing itself: have backend+frontend running, or let
-# Playwright start them; browsers: npx playwright install chromium)
+# Playwright start them; browsers: npx playwright install chromium webkit)
 cd frontend && npx playwright test
+
+# Independent math audit: recomputes the entire seeded valuation from the
+# METHODOLOGY formulas (no app code imported) and compares against the API
+python3 tools/verify_math.py
 ```
 
 ## CSV format
@@ -179,22 +183,22 @@ Required columns: `address`, `sale_price`, `sale_date` (YYYY-MM-DD),
 ## Example workflow
 
 1. **Dashboard** → *Create new CMA* (or open the seeded demo).
-2. **Subject** — enter the property (address required; more data → more
+2. **Subject**: enter the property (address required; more data → more
    computable components).
-3. **Comparables** — upload the sample CSV; *Recalculate similarity*; click any
+3. **Comparables**: upload the sample CSV; *Recalculate similarity*; click any
    score to see its component breakdown; exclude weak comps with a reason.
-4. **Adjustments** — review the sample assumptions, *Generate suggested
+4. **Adjustments**: review the sample assumptions, *Generate suggested
    adjustments*, edit any amount (it becomes a flagged manual override), add
    manual line items.
-5. **Valuation** — *Calculate valuation*; read the range, warnings, and each
+5. **Valuation**: *Calculate valuation*; read the range, warnings, and each
    comparable's influence percentage.
-6. **Strategies** — generate the three scenarios; edit prices to compare.
-7. **Report** — generate and print/save the seller-facing document.
-8. **Audit trail** — the full, timestamped story of every number.
+6. **Strategies**: generate the three scenarios; edit prices to compare.
+7. **Report**: generate and print/save the seller-facing document.
+8. **Audit trail**: the full, timestamped story of every number.
 
 ## Data & privacy policy
 
-- Bundled data is **synthetic** — fabricated addresses, invented prices.
+- Bundled data is **synthetic**: fabricated addresses, invented prices.
 - The intended data paths are manual entry, user-supplied CSVs, and public
   datasets whose terms permit the use. The project does **not** scrape Zillow,
   Redfin, Realtor.com, or MLS systems, and contributions that bypass terms of
@@ -219,7 +223,7 @@ authentication for multi-user deployments.
 
 ## Contributing
 
-PRs welcome — read [CONTRIBUTING.md](CONTRIBUTING.md). The one hard rule: every
+PRs welcome; read [CONTRIBUTING.md](CONTRIBUTING.md). The one hard rule: every
 user-visible number must remain explainable (breakdown, unit math, or audit
 event). Calculation changes must bump `CALC_VERSION` and update
 [docs/METHODOLOGY.md](docs/METHODOLOGY.md) in the same PR.

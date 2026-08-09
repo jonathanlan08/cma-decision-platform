@@ -61,7 +61,7 @@ export default function StrategiesPage() {
       >
         <p className="mb-3 text-sm text-slate-500">
           Three scenarios priced off the central estimate. Edit any price to compare your
-          own scenario — interest and risk labels update from documented thresholds. These
+          own scenario; interest and risk labels update from documented thresholds. These
           are qualitative scenario estimates, not validated predictions of market outcomes.
         </p>
 

@@ -57,7 +57,7 @@ def pdf_from_html(html: str) -> Optional[bytes]:
 
 def build_report_context(cma, comparables: List[Dict], valuation, strategies,
                          config) -> Dict[str, Any]:
-    """Assemble the template context from already-computed values only —
+    """Assemble the template context from already-computed values only;
     the report never calculates anything itself."""
     subject = cma.subject
     included = [c for c in comparables if c["included"]]

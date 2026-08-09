@@ -13,8 +13,8 @@ flowchart TB
     subgraph "backend/app"
         R[routers/<br>cmas · comparables · valuation ·<br>strategies · reports]
         S[services/<br>similarity · adjustments · reconciliation ·<br>strategies · csv_import · audit · report]
-        M[models.py — SQLAlchemy 2 ORM]
-        P[schemas.py — Pydantic v2 validation]
+        M[models.py · SQLAlchemy 2 ORM]
+        P[schemas.py · Pydantic v2 validation]
     end
     DB[(SQLite / PostgreSQL)]
     UI -->|fetch JSON, /api/*| R
@@ -53,7 +53,7 @@ sequenceDiagram
     A-->>U: ValuationOut (range, warnings, influence table)
 ```
 
-`ValuationResult` rows are never updated — each recalculation appends, so the
+`ValuationResult` rows are never updated; each recalculation appends, so the
 audit trail can always point at the exact numbers a report used.
 
 ## Entity model
@@ -91,7 +91,7 @@ Field-level reference: [DATA_DICTIONARY.md](DATA_DICTIONARY.md).
 
 ```
 backend/
-  app/constants.py      CALC_VERSION, defaults, disclaimer — single source
+  app/constants.py      CALC_VERSION, defaults, disclaimer (single source)
   app/services/         All math (pure, tested)
   app/routers/          HTTP surface + audit logging
   app/templates/        Report template (Jinja2)

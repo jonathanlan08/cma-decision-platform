@@ -266,7 +266,7 @@ export function ComparablesTable({
                           onClick={() => setExpandedId(expanded ? null : comp.id)}
                         >
                           {similarity.toFixed(0)}
-                          <span className="sr-only"> — toggle breakdown</span>
+                          <span className="sr-only"> (toggle breakdown)</span>
                         </button>
                       )}
                     </td>

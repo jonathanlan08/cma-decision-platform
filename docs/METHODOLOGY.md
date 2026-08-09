@@ -9,7 +9,7 @@ a bug.
 
 > **Scope disclaimer.** This is a transparent implementation of the
 > *sales-comparison approach* as commonly used in residential brokerage CMAs.
-> It is an educational tool — not an appraisal methodology, and none of the
+> It is an educational tool, not an appraisal methodology, and none of the
 > default numbers below are market standards. Every default is a sample value
 > the user is expected to review and change.
 
@@ -125,7 +125,7 @@ not double-counted; the user multiplier (default 1.0, range 0–10) is the
 explicit override lever and every change to it is audit-logged. If all raw
 weights are zero, equal weights apply and a warning is recorded. A comparable
 with no similarity score participates at full base weight (its data was too
-sparse to score — the warning system flags thin analyses separately).
+sparse to score; the warning system flags thin analyses separately).
 
 Dispersion and range:
 
@@ -143,7 +143,7 @@ comparable the band is a nominal ±5% with an explicit warning.
 
 Also reported: unweighted median adjusted value, weighted adjusted $/sq ft
 (over comps with valid sq ft, renormalized), included count, and per-comparable
-influence percentages (normalized weights × 100 — these sum to 100%).
+influence percentages (normalized weights × 100; these sum to 100%).
 
 Warnings (all thresholds configurable): no comparables · fewer than 3 ·
 single-comparable band · cov > 15% · gross adjustments > 25% of sale price ·
@@ -184,7 +184,7 @@ days-on-market or sale-probability model and makes no such predictions.
 Append-only `AuditEvent` rows record: comparable inclusion/exclusion (with
 reasons), adjustment additions/edits/deletions, weight and assumption changes
 (before → after), user overrides, valuation recalculations (with the full
-per-comparable weight snapshot), strategy changes, report generation — each
+per-comparable weight snapshot), strategy changes, report generation, each
 with timestamp, actor, plain-language summary, structured details, and the
 calculation version.
 

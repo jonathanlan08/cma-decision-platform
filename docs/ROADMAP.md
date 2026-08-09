@@ -1,6 +1,6 @@
 # Roadmap
 
-## v0.1.0 (current) — Transparent CMA MVP
+## v0.1.0 (current): Transparent CMA MVP
 
 Complete workflow: subject → comparables (CSV/manual) → similarity →
 adjustments → reconciliation → strategies → report → audit trail, with the full
@@ -13,14 +13,14 @@ test pyramid and CI. SQLite default, Postgres option, no auth (demo mode).
 - ✅ Basic map: dependency-free SVG proximity plot (subject-centered, distance
   rings, included/excluded encoding) on the comparables screen.
 
-## v0.2 — Evidence-derived adjustments
+## v0.2: Evidence-derived adjustments
 
 - **Paired-sales analysis**: derive suggested adjustment magnitudes from the
   comparable set itself (e.g., regress adjusted price on GLA within the comp
-  set) and show the derivation — keeping the transparency rule.
+  set) and show the derivation, keeping the transparency rule.
 - Assumption presets per market area, still user-owned and audited.
 
-## v0.3 — Map & market context
+## v0.3: Map & market context
 
 - Tile-based map view of subject + comps (Leaflet/MapLibre with open tiles),
   upgrading the current SVG proximity plot.
@@ -28,17 +28,17 @@ test pyramid and CI. SQLite default, Postgres option, no auth (demo mode).
   provenance recorded per row.
 - Market-trend helper for the time adjustment (user-confirmed, never silent).
 
-## v0.4 — Multi-user
+## v0.4: Multi-user
 
 - Authentication (the `User` FK exists everywhere already) and per-user data.
 - Team review flow: a second agent can annotate an analysis before the listing
   appointment (annotations land in the audit trail).
 - Postgres as the documented production default; managed deployment recipe.
 
-## v0.5 — Presentation polish
+## v0.5: Presentation polish
 
 - Branded report themes and a client-friendly share link (read-only).
-- Plain-language AI explanations of the deterministic results — explicitly
+- Plain-language AI explanations of the deterministic results, explicitly
   scoped so AI narrates stored numbers and never invents data or conclusions.
 - Spanish/Chinese report localization (relevant to the San Gabriel Valley).
 

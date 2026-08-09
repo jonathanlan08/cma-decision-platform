@@ -64,7 +64,7 @@ Same physical fields as the subject, plus:
 | included | bool | drives reconciliation membership |
 | similarity_score | float? | 0–100; null until scored |
 | similarity_breakdown | JSON? | full component breakdown (see METHODOLOGY §2) |
-| user_weight_multiplier | float | 0–10, default 1.0 — the explicit override lever |
+| user_weight_multiplier | float | 0–10, default 1.0; the explicit override lever |
 | exclusion_reason | text? | audit-logged |
 
 ## adjustments
