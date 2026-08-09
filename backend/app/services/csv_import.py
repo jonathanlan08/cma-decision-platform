@@ -6,6 +6,7 @@ importer never guesses at ambiguous values.
 """
 import csv
 import io
+import math
 from datetime import date, datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -17,7 +18,7 @@ from ..constants import (
 )
 
 TRUE_VALUES = {"true", "yes", "y", "1"}
-FALSE_VALUES = {"false", "no", "n", "0", ""}
+FALSE_VALUES = {"false", "no", "n", "0"}
 
 
 def template_csv() -> str:
@@ -48,6 +49,11 @@ def _parse_float(value: str, field: str, errors: List[Dict], row: int,
     except ValueError:
         errors.append({"row": row, "field": field,
                        "message": "'%s' is not a valid number" % value})
+        return None
+    if not math.isfinite(parsed):
+        # float() accepts "nan"/"inf"; those corrupt every downstream number.
+        errors.append({"row": row, "field": field,
+                       "message": "'%s' is not a finite number" % value})
         return None
     if strictly_positive and parsed <= 0:
         errors.append({"row": row, "field": field,
@@ -119,8 +125,16 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
                            "message": "Row limit of %d exceeded; extra rows ignored"
                            % CSV_MAX_ROWS})
             break
-        row = { (k or "").strip().lower(): (v or "").strip() for k, v in raw.items() }
         row_errors: List[Dict] = []
+        # csv.DictReader collects surplus cells under the None key (as a list);
+        # reject them as a row error instead of crashing on list.strip().
+        if raw.get(None):
+            row_errors.append({"row": idx, "field": "row",
+                               "message": "Row has more columns than the header"})
+        row = {
+            (k or "").strip().lower(): (v or "").strip()
+            for k, v in raw.items() if k is not None
+        }
 
         address = row.get("address", "")
         if not address:
@@ -165,21 +179,26 @@ def parse_comparables_csv(text: str) -> Tuple[List[Dict], List[Dict]]:
                                % ", ".join(CONDITION_SCALE)})
             condition = None
 
-        property_type = row.get("property_type", "").lower() or "single_family"
-        if property_type not in PROPERTY_TYPES:
+        # Blank property_type and pool stay unknown (None): missing data is
+        # skipped in scoring/adjustments, never guessed.
+        property_type = row.get("property_type", "").lower() or None
+        if property_type is not None and property_type not in PROPERTY_TYPES:
             row_errors.append({"row": idx, "field": "property_type",
                                "message": "property_type must be one of: %s"
                                % ", ".join(PROPERTY_TYPES)})
+            property_type = None
 
         pool_raw = row.get("pool", "").lower()
-        if pool_raw in TRUE_VALUES:
+        if pool_raw == "":
+            has_pool: Optional[bool] = None
+        elif pool_raw in TRUE_VALUES:
             has_pool = True
         elif pool_raw in FALSE_VALUES:
             has_pool = False
         else:
             row_errors.append({"row": idx, "field": "pool",
                                "message": "'%s' is not a valid true/false value" % pool_raw})
-            has_pool = False
+            has_pool = None
 
         if row_errors:
             errors.extend(row_errors)

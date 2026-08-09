@@ -1,11 +1,28 @@
 """Pydantic request/response schemas (v2). All API I/O is validated here;
 calculation logic stays in app/services."""
+import math
 from datetime import date, datetime
 from typing import Any, Dict, List, Optional
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
 
-from .constants import CMA_STATUSES, CONDITION_SCALE, PROPERTY_TYPES
+from .constants import (
+    CMA_STATUSES,
+    CONDITION_SCALE,
+    DEFAULT_ASSUMPTIONS,
+    DEFAULT_RECONCILIATION,
+    DEFAULT_SIMILARITY_PARAMS,
+    DEFAULT_WEIGHTS,
+    PROPERTY_TYPES,
+)
+
+
+def _reject_null(value, field_name: str):
+    """Shared guard for PATCH schemas: an explicit JSON null on a field whose
+    database column is NOT NULL must 422, not crash on commit."""
+    if value is None:
+        raise ValueError("%s cannot be null" % field_name)
+    return value
 
 
 class ORMModel(BaseModel):
@@ -22,6 +39,11 @@ class CMAUpdate(BaseModel):
     title: Optional[str] = Field(default=None, max_length=255)
     status: Optional[str] = None
     notes: Optional[str] = None
+
+    @field_validator("title", "status", mode="before")
+    @classmethod
+    def no_explicit_null(cls, v, info):
+        return _reject_null(v, info.field_name)
 
     @field_validator("status")
     @classmethod
@@ -43,8 +65,12 @@ class ValuationOut(ORMModel):
     dispersion: Optional[float]
     cov: Optional[float]
     included_count: int
+    effective_count: Optional[int] = None
     warnings: Optional[List[Dict[str, Any]]]
     per_comparable: Optional[List[Dict[str, Any]]]
+    # Set by the API layer: True when the CMA's inputs changed after this
+    # valuation was calculated; None when unknown (pre-fingerprint history).
+    stale: Optional[bool] = None
 
 
 class SubjectIn(BaseModel):
@@ -55,9 +81,9 @@ class SubjectIn(BaseModel):
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     property_type: str = "single_family"
     bedrooms: Optional[int] = Field(default=None, ge=0, le=50)
-    bathrooms: Optional[float] = Field(default=None, ge=0, le=50)
-    square_feet: Optional[float] = Field(default=None, gt=0)
-    lot_size: Optional[float] = Field(default=None, ge=0)
+    bathrooms: Optional[float] = Field(default=None, ge=0, le=50, allow_inf_nan=False)
+    square_feet: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
     condition: Optional[str] = None
     parking_spaces: Optional[int] = Field(default=None, ge=0, le=50)
@@ -127,25 +153,26 @@ class ComparableIn(BaseModel):
     zip_code: Optional[str] = Field(default=None, max_length=10)
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
-    property_type: str = "single_family"
-    sale_price: float = Field(gt=0)
+    # None = unknown; the value is then skipped in scoring/adjustments.
+    property_type: Optional[str] = None
+    sale_price: float = Field(gt=0, allow_inf_nan=False)
     sale_date: date
-    square_feet: float = Field(gt=0)
-    lot_size: Optional[float] = Field(default=None, ge=0)
+    square_feet: float = Field(gt=0, allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     bedrooms: int = Field(ge=0, le=50)
-    bathrooms: float = Field(ge=0, le=50)
+    bathrooms: float = Field(ge=0, le=50, allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
     condition: Optional[str] = None
     parking_spaces: Optional[int] = Field(default=None, ge=0, le=50)
-    has_pool: bool = False
-    distance_from_subject: Optional[float] = Field(default=None, ge=0)
+    has_pool: Optional[bool] = None
+    distance_from_subject: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     notes: Optional[str] = None
     source: Optional[str] = "manual-entry"
 
     @field_validator("property_type")
     @classmethod
     def check_type(cls, v):
-        if v not in PROPERTY_TYPES:
+        if v is not None and v not in PROPERTY_TYPES:
             raise ValueError("property_type must be one of: %s" % ", ".join(PROPERTY_TYPES))
         return v
 
@@ -172,19 +199,33 @@ class ComparableUpdate(BaseModel):
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
     property_type: Optional[str] = None
-    sale_price: Optional[float] = Field(default=None, gt=0)
+    sale_price: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
     sale_date: Optional[date] = None
-    square_feet: Optional[float] = Field(default=None, gt=0)
-    lot_size: Optional[float] = Field(default=None, ge=0)
+    square_feet: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     bedrooms: Optional[int] = Field(default=None, ge=0, le=50)
-    bathrooms: Optional[float] = Field(default=None, ge=0, le=50)
+    bathrooms: Optional[float] = Field(default=None, ge=0, le=50, allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
     condition: Optional[str] = None
     parking_spaces: Optional[int] = Field(default=None, ge=0, le=50)
     has_pool: Optional[bool] = None
-    distance_from_subject: Optional[float] = Field(default=None, ge=0)
+    distance_from_subject: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
     notes: Optional[str] = None
     source: Optional[str] = None
+
+    @field_validator("address", "sale_price", "sale_date", "square_feet",
+                     "bedrooms", "bathrooms", mode="before")
+    @classmethod
+    def no_explicit_null(cls, v, info):
+        return _reject_null(v, info.field_name)
+
+    @field_validator("sale_date")
+    @classmethod
+    def check_sale_date(cls, v):
+        # Same rule as create; PATCH must not smuggle in a future sale.
+        if v is not None and v > date.today():
+            raise ValueError("sale_date cannot be in the future")
+        return v
 
     @field_validator("property_type")
     @classmethod
@@ -229,7 +270,7 @@ class ComparableOut(ORMModel):
     zip_code: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
-    property_type: str
+    property_type: Optional[str]
     sale_price: float
     sale_date: date
     square_feet: float
@@ -239,7 +280,7 @@ class ComparableOut(ORMModel):
     year_built: Optional[int]
     condition: Optional[str]
     parking_spaces: Optional[int]
-    has_pool: bool
+    has_pool: Optional[bool]
     distance_from_subject: Optional[float]
     notes: Optional[str]
     source: Optional[str]
@@ -255,8 +296,14 @@ class ComparableOut(ORMModel):
 
 class SelectionUpdate(BaseModel):
     included: Optional[bool] = None
-    user_weight_multiplier: Optional[float] = Field(default=None, ge=0, le=10)
+    user_weight_multiplier: Optional[float] = Field(default=None, ge=0, le=10,
+                                                    allow_inf_nan=False)
     exclusion_reason: Optional[str] = None
+
+    @field_validator("included", "user_weight_multiplier", mode="before")
+    @classmethod
+    def no_explicit_null(cls, v, info):
+        return _reject_null(v, info.field_name)
 
 
 class CSVImportResult(BaseModel):
@@ -270,7 +317,7 @@ class CSVImportResult(BaseModel):
 
 class AdjustmentIn(BaseModel):
     category: str = Field(min_length=1, max_length=50)
-    amount: float
+    amount: float = Field(allow_inf_nan=False)
     subject_value: Optional[str] = Field(default=None, max_length=100)
     comparable_value: Optional[str] = Field(default=None, max_length=100)
     unit_description: Optional[str] = Field(default=None, max_length=255)
@@ -278,8 +325,13 @@ class AdjustmentIn(BaseModel):
 
 
 class AdjustmentUpdate(BaseModel):
-    amount: Optional[float] = None
+    amount: Optional[float] = Field(default=None, allow_inf_nan=False)
     explanation: Optional[str] = None
+
+    @field_validator("amount", mode="before")
+    @classmethod
+    def no_explicit_null(cls, v, info):
+        return _reject_null(v, info.field_name)
 
 
 # --- Configuration -----------------------------------------------------------
@@ -292,6 +344,17 @@ class ConfigOut(ORMModel):
     updated_at: datetime
 
 
+def _check_config_dict(v: Dict[str, float], allowed, label: str) -> None:
+    """Unknown keys and non-finite values are rejected outright: they would be
+    silently merged into the stored config and poison every later calculation."""
+    unknown = sorted(set(v) - set(allowed))
+    if unknown:
+        raise ValueError("unknown %s key(s): %s" % (label, ", ".join(unknown)))
+    for key, value in v.items():
+        if not math.isfinite(value):
+            raise ValueError("%s '%s' must be a finite number" % (label, key))
+
+
 class ConfigUpdate(BaseModel):
     weights: Optional[Dict[str, float]] = None
     similarity_params: Optional[Dict[str, float]] = None
@@ -302,11 +365,71 @@ class ConfigUpdate(BaseModel):
     @classmethod
     def check_weights(cls, v):
         if v is not None:
+            _check_config_dict(v, DEFAULT_WEIGHTS, "weight")
             for key, value in v.items():
                 if value < 0:
                     raise ValueError("weight '%s' cannot be negative" % key)
             if sum(v.values()) <= 0:
                 raise ValueError("at least one weight must be positive")
+        return v
+
+    @field_validator("similarity_params")
+    @classmethod
+    def check_similarity_params(cls, v):
+        if v is not None:
+            _check_config_dict(v, DEFAULT_SIMILARITY_PARAMS, "similarity parameter")
+            for key, value in v.items():
+                # Every parameter is a curve cap/tolerance used as a divisor.
+                if value <= 0:
+                    raise ValueError(
+                        "similarity parameter '%s' must be greater than zero" % key)
+        return v
+
+    @field_validator("assumptions")
+    @classmethod
+    def check_assumptions(cls, v):
+        if v is not None:
+            _check_config_dict(v, DEFAULT_ASSUMPTIONS, "assumption")
+            for key, value in v.items():
+                if key == "monthly_market_pct":
+                    # Markets can decline, so a negative rate is legitimate;
+                    # bound it to a sane fraction per month.
+                    if not -1 <= value <= 1:
+                        raise ValueError(
+                            "monthly_market_pct must be between -1 and 1")
+                elif value < 0:
+                    # A negative dollar-per-unit value would silently reverse
+                    # the adjustment direction convention.
+                    raise ValueError("assumption '%s' cannot be negative" % key)
+        return v
+
+    @field_validator("reconciliation")
+    @classmethod
+    def check_reconciliation(cls, v):
+        if v is not None:
+            _check_config_dict(v, DEFAULT_RECONCILIATION, "reconciliation parameter")
+            rules = {
+                "range_k": lambda x: x >= 0,
+                "single_comp_range_pct": lambda x: 0 <= x <= 1,
+                "high_dispersion_cov": lambda x: x > 0,
+                "gross_adjustment_warn_pct": lambda x: x > 0,
+                "stale_sale_months": lambda x: x >= 0,
+                "outlier_deviation_pct": lambda x: x > 0,
+            }
+            messages = {
+                "range_k": "range_k cannot be negative (a negative value reverses "
+                           "the low/high range)",
+                "single_comp_range_pct": "single_comp_range_pct must be between 0 and 1",
+                "high_dispersion_cov": "high_dispersion_cov must be greater than zero",
+                "gross_adjustment_warn_pct":
+                    "gross_adjustment_warn_pct must be greater than zero",
+                "stale_sale_months": "stale_sale_months cannot be negative",
+                "outlier_deviation_pct":
+                    "outlier_deviation_pct must be greater than zero",
+            }
+            for key, value in v.items():
+                if key in rules and not rules[key](value):
+                    raise ValueError(messages[key])
         return v
 
 
@@ -343,7 +466,7 @@ class StrategyOut(ORMModel):
 
 
 class StrategyUpdate(BaseModel):
-    list_price: float = Field(gt=0)
+    list_price: float = Field(gt=0, allow_inf_nan=False)
 
 
 # --- Audit / reports / meta --------------------------------------------------

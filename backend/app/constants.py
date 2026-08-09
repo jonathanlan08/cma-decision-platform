@@ -5,7 +5,7 @@ the audit trail always records which version of the methodology produced a
 number. Bump it whenever calculation behavior changes.
 """
 
-CALC_VERSION = "calc-v1.0"
+CALC_VERSION = "calc-v1.1"
 
 DISCLAIMER = (
     "This Comparative Market Analysis is an informational estimate produced by an "

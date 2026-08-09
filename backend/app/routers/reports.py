@@ -17,11 +17,18 @@ from ..constants import (
     PROPERTY_TYPES,
 )
 from ..database import get_db
-from ..models import GeneratedReport
+from ..models import AuditEvent, GeneratedReport
 from ..schemas import AuditEventOut, MetaOut, ReportOut
 from ..services.audit import log_event
 from ..services.report import build_report_context, pdf_from_html, render_report_html
-from .helpers import comparable_out, ensure_config, get_cma_or_404, latest_valuation, touch
+from .helpers import (
+    comparable_out,
+    ensure_config,
+    get_cma_or_404,
+    latest_valuation,
+    touch,
+    valuation_staleness,
+)
 
 router = APIRouter(prefix="/api", tags=["Reports & audit"])
 
@@ -47,8 +54,15 @@ def list_audit_events(
     offset: int = Query(default=0, ge=0),
     db: Session = Depends(get_db),
 ):
-    cma = get_cma_or_404(db, cma_id)
-    events = list(reversed(cma.audit_events))[offset:offset + limit]
+    get_cma_or_404(db, cma_id)
+    events = (
+        db.query(AuditEvent)
+        .filter(AuditEvent.cma_id == cma_id)
+        .order_by(AuditEvent.id.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
     return [AuditEventOut.model_validate(e) for e in events]
 
 
@@ -93,6 +107,25 @@ def generate_report(cma_id: int, db: Session = Depends(get_db)):
                             detail="Enter the subject property before generating a report")
     config = ensure_config(db, cma)
     valuation = latest_valuation(cma)
+
+    # Consistency gate: a seller-facing report must come from one coherent
+    # state. Stale outputs are rejected instead of silently mixed with
+    # current inputs.
+    if valuation is not None:
+        if valuation_staleness(cma, valuation):
+            raise HTTPException(
+                status_code=409,
+                detail="Inputs have changed since the valuation was calculated. "
+                "Recalculate the valuation (and regenerate strategies) before "
+                "generating a report.",
+            )
+        if any(s.updated_at < valuation.created_at for s in cma.strategies):
+            raise HTTPException(
+                status_code=409,
+                detail="The listing strategies were generated from an earlier "
+                "valuation. Regenerate strategies before generating a report.",
+            )
+
     context = build_report_context(
         cma, _comparable_report_rows(cma), valuation, cma.strategies, config
     )

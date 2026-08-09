@@ -53,11 +53,17 @@ export function WeightsEditor({
         ))}
       </div>
       <div className="mt-3 flex items-center justify-between">
-        <p className={`text-xs ${Math.abs(total - 1) > 0.001 ? "text-amber-700" : "text-slate-500"}`}>
-          Total: {total.toFixed(2)}
-          {Math.abs(total - 1) > 0.001 && " (will be normalized to 1.00)"}
-        </p>
-        <button type="submit" className="btn-secondary" disabled={saving}>
+        {total <= 0 ? (
+          <p className="text-xs font-medium text-red-700">
+            Total must be greater than zero: at least one component needs a positive weight.
+          </p>
+        ) : (
+          <p className={`text-xs ${Math.abs(total - 1) > 0.001 ? "text-amber-700" : "text-slate-500"}`}>
+            Total: {total.toFixed(2)}
+            {Math.abs(total - 1) > 0.001 && " (will be normalized to 1.00)"}
+          </p>
+        )}
+        <button type="submit" className="btn-secondary" disabled={saving || total <= 0}>
           {saving ? "Saving…" : "Save weights"}
         </button>
       </div>

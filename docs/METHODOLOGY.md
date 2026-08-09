@@ -1,6 +1,15 @@
 # Valuation Methodology
 
-Version: **calc-v1.0** (stamped on every stored valuation, report, and audit event)
+Version: **calc-v1.1** (stamped on every stored valuation, report, and audit event)
+
+Changes in calc-v1.1 (2026-08-09): an unscored comparable (no similarity score)
+now carries **zero** weight in reconciliation instead of full base weight;
+adequacy warnings and the single-comparable band are based on the **effective
+count** (comparables with positive weight), not the raw included count; a pool
+adjustment is skipped when either side's pool status is unknown; every
+valuation stores an **input fingerprint** so stale results are detected and
+reports refuse to mix old outputs with new inputs. calc-v1.0 numbers are
+otherwise unchanged.
 
 This document is the authoritative description of every calculation the
 platform performs. The implementation lives in `backend/app/services/` and is
@@ -92,6 +101,8 @@ Suggested adjustments are generated from the per-CMA assumption set
 Rules:
 
 * A category with missing data on either side is **skipped, never guessed**.
+  This includes an unknown pool status or property type (stored as null, e.g.
+  from a blank CSV cell): unknown never means "no pool".
 * Setting an assumption to 0 disables that category.
 * Users can add manual adjustments, edit any amount (an edited suggested
   adjustment is re-flagged `manual`), or delete adjustments; each action is
@@ -122,10 +133,17 @@ central_estimate    = Σ (adjusted_value_i × normalized_weight_i)
 
 Notes on the weight chain: recency already contributes to similarity, so it is
 not double-counted; the user multiplier (default 1.0, range 0–10) is the
-explicit override lever and every change to it is audit-logged. If all raw
-weights are zero, equal weights apply and a warning is recorded. A comparable
-with no similarity score participates at full base weight (its data was too
-sparse to score; the warning system flags thin analyses separately).
+explicit override lever and every change to it is audit-logged. A comparable
+with **no similarity score gets zero weight** and a warning: an unscored
+comparable must never outrank scored ones (calc-v1.1; earlier versions gave it
+full base weight, which was wrong). If all scored comparables end up with zero
+weight, equal weights apply across the scored ones with a warning; if nothing
+is scored at all, no estimate is produced.
+
+The **effective count** (comparables with positive weight) is reported next to
+the included count and drives the adequacy warnings: three included rows with
+weights [1, 0, 0] are one effective comparable, warned as insufficient, and
+given the nominal single-comparable band instead of a zero-width range.
 
 Dispersion and range:
 
@@ -138,8 +156,16 @@ cov  = dispersion / central                     (coefficient of variation)
 ```
 
 **The low–high band is an analytical estimate, not a statistical confidence
-interval**, and is labeled as such everywhere it appears. With a single
-comparable the band is a nominal ±5% with an explicit warning.
+interval**, and is labeled as such everywhere it appears. When only one
+comparable carries weight the band is a nominal ±5% with an explicit warning.
+
+**Staleness.** Every stored valuation records a SHA-256 fingerprint of the
+inputs it was computed from (subject fields, comparable data, inclusion
+states, multipliers, adjustments, the full configuration, and the calc
+version). When any of those change, the API flags the valuation `stale`, the
+UI shows an "inputs changed" warning, and report generation returns 409 until
+the valuation is recalculated and strategies are regenerated from it. Cosmetic
+fields (titles, notes, addresses) do not affect the fingerprint.
 
 Also reported: unweighted median adjusted value, weighted adjusted $/sq ft
 (over comps with valid sq ft, renormalized), included count, and per-comparable

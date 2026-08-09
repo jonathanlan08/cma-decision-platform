@@ -2,6 +2,40 @@
 
 ## Unreleased
 
+- **Integrity hardening (calc-v1.1)** (2026-08-08):
+  - Staleness detection: every valuation stores a SHA-256 fingerprint of its
+    inputs; the API flags stale valuations, the UI shows "inputs changed"
+    warnings, and report generation returns 409 until the valuation and
+    strategies are refreshed from one consistent state.
+  - Unscored comparables (no similarity score) now carry zero weight in
+    reconciliation with an explicit warning; previously they were silently
+    given full base weight and could outrank scored comparables.
+  - Adequacy warnings and the single-comparable band use the new
+    `effective_count` (comparables with positive weight), so weights like
+    [1, 0, 0] no longer produce a zero-width range with no warning.
+  - Configuration updates are strictly validated: unknown keys, NaN/Infinity,
+    negative `range_k`, negative dollar assumptions, and non-positive
+    similarity caps are rejected with 422.
+  - CSV import rejects NaN/Infinity values and surplus cells as row-level
+    errors (previously they could 500 or corrupt the analysis), and blank
+    `property_type`/`pool` are stored as unknown (null) instead of being
+    guessed as `single_family`/`false`; unknown values are skipped in scoring
+    and adjustments, matching the "missing data is never guessed" promise.
+  - Explicit JSON `null` on required PATCH fields returns 422 instead of 500;
+    comparable PATCH now enforces the future-sale-date rule; no-op adjustment
+    PATCHes no longer create misleading audit events.
+  - Frontend failure recovery: generating suggestions saves visible (unsaved)
+    assumption edits first; failed saves no longer clear form drafts or leave
+    controls permanently disabled; report generation no longer relies on a
+    blockable popup and updates the workflow stepper immediately; the
+    dashboard gained complete/archive/restore controls; the weights editor
+    blocks an all-zero total.
+  - Hardening: SQLite foreign-key enforcement enabled, audit pagination moved
+    into SQL, upload size checked before reading, report favicon 404 fixed,
+    `tools/verify_math.py` no longer assumes CMA id 1 and verifies the new
+    semantics. 24 new regression tests (19 backend, 5 frontend); suite totals
+    are now 106 pytest + 33 Vitest.
+
 - Full QA pass (see docs/QA_REPORT.md): fixed a UTC date-shift display bug,
   replaced `window.confirm` deletion with an accessible two-step confirm,
   made Enter commit strategy prices directly, plus two cosmetic fixes.

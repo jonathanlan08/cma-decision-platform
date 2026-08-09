@@ -16,8 +16,9 @@ from ..models import (
     ComparableSelection,
     WeightConfiguration,
 )
-from ..schemas import ComparableOut
+from ..schemas import ComparableOut, ValuationOut
 from ..services.adjustments import adjusted_ppsf, adjusted_price, adjustment_percentages
+from ..services.fingerprint import valuation_fingerprint
 from ..services.similarity import compute_similarity, resolve_distance_miles
 
 
@@ -106,6 +107,21 @@ def touch(cma: CMAAnalysis) -> None:
 
 def latest_valuation(cma: CMAAnalysis):
     return cma.valuations[-1] if cma.valuations else None
+
+
+def valuation_staleness(cma: CMAAnalysis, valuation) -> Optional[bool]:
+    """True when the CMA's inputs no longer match what the valuation was
+    computed from; None when unknown (no stored fingerprint)."""
+    if valuation is None or valuation.input_fingerprint is None:
+        return None
+    return valuation.input_fingerprint != valuation_fingerprint(cma, cma.weight_config)
+
+
+def valuation_out(cma: CMAAnalysis, valuation) -> ValuationOut:
+    """ValuationOut with the staleness flag stamped by the API layer."""
+    out = ValuationOut.model_validate(valuation)
+    out.stale = valuation_staleness(cma, valuation)
+    return out
 
 
 def money(value: Optional[float]) -> str:

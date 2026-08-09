@@ -151,11 +151,48 @@ def test_weighted_ppsf_none_when_no_sqft_anywhere():
     assert result["weighted_ppsf"] is None
 
 
-def test_missing_similarity_treated_as_full_weight():
+def test_unscored_comparable_gets_zero_weight_not_full_weight():
+    """calc-v1.1: similarity=None must never outrank scored comparables."""
     result = reconcile(
         [item(1, 900_000, similarity=None), item(2, 1_100_000, similarity=100.0)],
         P, as_of=AS_OF)
-    assert result["central_estimate"] == pytest.approx(1_000_000)
+    # All the weight goes to the scored comparable.
+    assert result["central_estimate"] == pytest.approx(1_100_000)
+    by_id = {e["comp_id"]: e for e in result["per_comparable"]}
+    assert by_id[1]["influence_pct"] == 0.0
+    assert by_id[2]["influence_pct"] == 100.0
+    codes = [w["code"] for w in result["warnings"]]
+    assert "unscored_comparable" in codes
+    assert result["effective_count"] == 1
+
+
+def test_all_unscored_comparables_produce_no_estimate():
+    result = reconcile(
+        [item(1, 900_000, similarity=None), item(2, 1_100_000, similarity=None)],
+        P, as_of=AS_OF)
+    assert result["central_estimate"] is None
+    assert result["effective_count"] == 0
+    codes = [w["code"] for w in result["warnings"]]
+    assert "no_scored_comparables" in codes
+
+
+def test_zero_weight_rows_do_not_inflate_adequacy():
+    """Three included rows with effective weights [1, 0, 0] are ONE effective
+    comparable: warn as insufficient and use the nominal single-comp band."""
+    result = reconcile(
+        [
+            item(1, 1_000_000, similarity=90.0, multiplier=1.0),
+            item(2, 900_000, similarity=90.0, multiplier=0.0),
+            item(3, 1_200_000, similarity=90.0, multiplier=0.0),
+        ],
+        P, as_of=AS_OF)
+    assert result["included_count"] == 3
+    assert result["effective_count"] == 1
+    codes = [w["code"] for w in result["warnings"]]
+    assert "insufficient_comparables" in codes
+    assert "single_comparable" in codes
+    # Nominal band, not a zero-width range.
+    assert result["low_estimate"] < result["central_estimate"] < result["high_estimate"]
 
 
 def test_sale_date_none_is_tolerated():

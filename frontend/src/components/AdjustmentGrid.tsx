@@ -9,7 +9,9 @@ export interface AdjustmentGridProps {
   comparable: Comparable;
   onEditAmount: (adjustment: Adjustment, amount: number) => void;
   onDeleteAdjustment: (adjustment: Adjustment) => void;
-  onAddManual: (values: { category: string; amount: number; explanation: string }) => void;
+  onAddManual: (
+    values: { category: string; amount: number; explanation: string },
+  ) => void | Promise<void>;
 }
 
 // One comparable's adjustment grid: category, subject vs comp, unit basis,
@@ -23,26 +25,52 @@ export function AdjustmentGrid({
   const [category, setCategory] = useState("");
   const [amount, setAmount] = useState("");
   const [explanation, setExplanation] = useState("");
+  // Per-adjustment edit drafts; committed on blur, reverted on failed save.
+  const [amountDrafts, setAmountDrafts] = useState<Record<number, string>>({});
   const [formError, setFormError] = useState<string | null>(null);
 
   const total = comparable.adjustments.reduce((sum, adj) => sum + adj.amount, 0);
 
-  function handleAdd(event: React.FormEvent) {
+  async function handleAdd(event: React.FormEvent) {
     event.preventDefault();
     const parsed = Number(amount);
     if (!category.trim()) {
       setFormError("Category is required.");
       return;
     }
-    if (amount.trim() === "" || Number.isNaN(parsed)) {
+    if (amount.trim() === "" || Number.isNaN(parsed) || !Number.isFinite(parsed)) {
       setFormError("Enter a dollar amount (negative adjusts the comparable downward).");
       return;
     }
     setFormError(null);
-    onAddManual({ category: category.trim(), amount: parsed, explanation: explanation.trim() });
-    setCategory("");
-    setAmount("");
-    setExplanation("");
+    try {
+      await onAddManual({
+        category: category.trim(), amount: parsed, explanation: explanation.trim(),
+      });
+      // Only a successful save clears the draft.
+      setCategory("");
+      setAmount("");
+      setExplanation("");
+    } catch {
+      // The page surfaces the error; the draft stays editable.
+    }
+  }
+
+  function commitAmount(adj: Adjustment) {
+    const raw = amountDrafts[adj.id];
+    if (raw !== undefined) {
+      const value = Number(raw);
+      if (!Number.isNaN(value) && Number.isFinite(value) && value !== adj.amount) {
+        onEditAmount(adj, value);
+      }
+      // Drop the draft either way: on failure the input falls back to the
+      // last saved amount instead of displaying an unsaved value.
+      setAmountDrafts((d) => {
+        const next = { ...d };
+        delete next[adj.id];
+        return next;
+      });
+    }
   }
 
   return (
@@ -106,12 +134,11 @@ export function AdjustmentGrid({
                     type="number"
                     step={100}
                     className="field-input w-28 text-right"
-                    defaultValue={adj.amount}
-                    onBlur={(e) => {
-                      const value = Number(e.target.value);
-                      if (!Number.isNaN(value) && value !== adj.amount)
-                        onEditAmount(adj, value);
-                    }}
+                    value={amountDrafts[adj.id] ?? String(adj.amount)}
+                    onChange={(e) =>
+                      setAmountDrafts((d) => ({ ...d, [adj.id]: e.target.value }))
+                    }
+                    onBlur={() => commitAmount(adj)}
                   />
                 </td>
                 <td>

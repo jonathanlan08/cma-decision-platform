@@ -84,3 +84,28 @@ English, and the audit trail reads like a story of the analysis. The new
 [/guide](../frontend/src/app/guide/page.tsx) page closes the remaining gap
 (orientation for someone who has never built a CMA). The honest rough edges are
 listed above; none block the core workflow.
+
+## 7. Addendum: failure-state hardening pass (2026-08-09)
+
+A second adversarial QA pass (2026-08-08) focused on failure states and
+data integrity surfaced six P1 defects plus a set of P2
+failure-state issues. All P1s and the actionable P2s were fixed and
+regression-tested (see CHANGELOG "Integrity hardening (calc-v1.1)"):
+
+| Finding | Resolution |
+|---|---|
+| Stale valuations/strategies/reports presented as current | Input fingerprints on every valuation; `stale` flag in the API; UI banners; report generation returns 409 until consistent |
+| `similarity=None` weighted as 1.0 | Zero weight + `unscored_comparable` warning |
+| Zero-weight comps inflate adequacy (false precision) | New `effective_count` drives warnings and the single-comp band |
+| Invalid config accepted (negative `range_k`, unknown keys, NaN) | Strict per-section validation, 422 on violation |
+| CSV NaN/Infinity/surplus cells could 500 or corrupt data | Finite-number checks, surplus-cell row errors, nothing invalid commits |
+| Blank CSV `property_type`/`pool` silently guessed | Nullable columns; unknown is stored as unknown and skipped in calculations |
+| Unsaved assumption edits ignored by Generate | Generate persists visible edits first; unsaved-changes indicator |
+| Failed saves disable controls / lose drafts | Busy flags cleared in `finally`; drafts survive failed saves |
+| Report auto-open blocked by popup blockers; stepper not updated | Explicit open link + immediate summary refresh |
+| Dashboard lifecycle states not actionable | Complete / archive / restore controls added |
+| Misc: explicit-null PATCH 500s, future date via PATCH, no-op audit events, SQLite FKs off, audit pagination in Python, stale README instructions | All fixed |
+
+Intentionally deferred (documented in README "Known limitations"):
+authentication/authorization/rate limiting, licensed data acquisition,
+empirical validation of assumptions, and the accessibility items in section 5.

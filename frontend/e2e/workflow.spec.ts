@@ -85,10 +85,15 @@ test("full CMA workflow with the bundled synthetic sample", async ({ page }) => 
   await aspirational.getByLabel(/proposed list price/i).blur();
   await expect(aspirational.getByText(/agent-set price/i)).toBeVisible();
 
-  // 8. Export the report (opens in a new tab)
+  // 8. Generate the report, then open it from the explicit link (generation
+  // no longer relies on a popup, which browsers can silently block).
   await page.getByRole("link", { name: /next: report/i }).click();
-  const popupPromise = page.waitForEvent("popup");
   await page.getByRole("button", { name: /generate report/i }).click();
+  await expect(page.getByRole("status")).toContainText(/report generated/i, {
+    timeout: 20_000,
+  });
+  const popupPromise = page.waitForEvent("popup");
+  await page.getByRole("link", { name: /open the new report/i }).click();
   const report = await popupPromise;
   await report.waitForLoadState();
   await expect(

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { api, ApiError } from "@/lib/api";
 import type { Strategy } from "@/lib/types";
 import { Card, EmptyState, ErrorBox, Spinner } from "@/components/ui";
+import { StaleBanner } from "@/components/StaleBanner";
 import { StrategyCompare } from "@/components/StrategyCompare";
 import { useCma } from "../cma-context";
 
@@ -64,6 +65,7 @@ export default function StrategiesPage() {
           own scenario; interest and risk labels update from documented thresholds. These
           are qualitative scenario estimates, not validated predictions of market outcomes.
         </p>
+        <StaleBanner cma={cma} />
 
         {central === null && (
           <EmptyState title="Valuation needed first">

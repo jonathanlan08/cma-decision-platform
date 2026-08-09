@@ -51,6 +51,33 @@ export default function AdjustmentsPage() {
     }
   }
 
+  const assumptionsDirty =
+    config !== null &&
+    Object.keys(assumptions).some((key) => assumptions[key] !== config.assumptions[key]);
+
+  async function saveAssumptions() {
+    setSavingAssumptions(true);
+    await guard(async () => {
+      setConfig(await api.updateConfig(cma.id, { assumptions }));
+    });
+    setSavingAssumptions(false);
+  }
+
+  // Generating always uses the assumptions the user can SEE: unsaved edits are
+  // persisted first, so the backend never computes from values the screen no
+  // longer shows.
+  async function generateSuggestions() {
+    setSuggesting(true);
+    await guard(async () => {
+      if (assumptionsDirty) {
+        setConfig(await api.updateConfig(cma.id, { assumptions }));
+      }
+      setComparables(await api.suggestAdjustments(cma.id));
+      reload();
+    });
+    setSuggesting(false);
+  }
+
   const included = (comparables ?? []).filter((c) => c.selection?.included !== false);
 
   return (
@@ -64,11 +91,7 @@ export default function AdjustmentsPage() {
         <form
           onSubmit={(e) => {
             e.preventDefault();
-            guard(async () => {
-              setSavingAssumptions(true);
-              setConfig(await api.updateConfig(cma.id, { assumptions }));
-              setSavingAssumptions(false);
-            });
+            saveAssumptions();
           }}
         >
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -90,7 +113,12 @@ export default function AdjustmentsPage() {
               </div>
             ))}
           </div>
-          <div className="mt-3 flex flex-wrap justify-end gap-2">
+          <div className="mt-3 flex flex-wrap items-center justify-end gap-2">
+            {assumptionsDirty && (
+              <p className="text-xs font-medium text-amber-700">
+                Unsaved changes (saved automatically when you generate)
+              </p>
+            )}
             <button type="submit" className="btn-secondary" disabled={savingAssumptions}>
               {savingAssumptions ? "Saving…" : "Save assumptions"}
             </button>
@@ -98,14 +126,7 @@ export default function AdjustmentsPage() {
               type="button"
               className="btn-primary"
               disabled={suggesting || !cma.subject}
-              onClick={() =>
-                guard(async () => {
-                  setSuggesting(true);
-                  setComparables(await api.suggestAdjustments(cma.id));
-                  setSuggesting(false);
-                  reload();
-                })
-              }
+              onClick={generateSuggestions}
             >
               {suggesting ? "Generating…" : "Generate suggested adjustments"}
             </button>
@@ -154,16 +175,21 @@ export default function AdjustmentsPage() {
                 setComparables(await api.listComparables(cma.id));
               })
             }
-            onAddManual={(values) =>
-              guard(async () => {
+            onAddManual={async (values) => {
+              // Rethrows on failure so the grid keeps the user's draft.
+              setError(null);
+              try {
                 await api.addAdjustment(comp.id, {
                   category: values.category,
                   amount: values.amount,
                   explanation: values.explanation || null,
                 });
                 setComparables(await api.listComparables(cma.id));
-              })
-            }
+              } catch (e) {
+                setError((e as ApiError).message);
+                throw e;
+              }
+            }}
           />
         </Card>
       ))}

@@ -76,8 +76,10 @@ export default function ComparablesPage() {
             <ComparableForm
               saving={adding}
               onSave={async (values: ComparableFormValues) => {
+                // Rethrows on failure so the form keeps the user's draft.
                 setAdding(true);
-                await guard(async () => {
+                setError(null);
+                try {
                   await api.addComparable(cma.id, {
                     ...values,
                     city: values.city || null,
@@ -87,8 +89,12 @@ export default function ComparablesPage() {
                   });
                   load();
                   reload();
-                });
-                setAdding(false);
+                } catch (e) {
+                  setError((e as ApiError).message);
+                  throw e;
+                } finally {
+                  setAdding(false);
+                }
               }}
             />
           </div>
@@ -133,14 +139,13 @@ export default function ComparablesPage() {
           <ComparablesTable
             comparables={comparables}
             busyId={busyId}
-            onToggleInclude={(comp, included) =>
+            onToggleInclude={(comp, included) => {
+              setBusyId(comp.id);
               guard(async () => {
-                setBusyId(comp.id);
                 replaceComp(await api.updateSelection(comp.id, { included }));
-                setBusyId(null);
                 reload();
-              })
-            }
+              }).finally(() => setBusyId(null));
+            }}
             onExclusionReason={(comp, reason) =>
               guard(async () => {
                 replaceComp(await api.updateSelection(comp.id, { exclusion_reason: reason }));
@@ -175,16 +180,15 @@ export default function ComparablesPage() {
           <WeightsEditor
             config={config}
             saving={savingWeights}
-            onSave={(weights) =>
+            onSave={(weights) => {
+              setSavingWeights(true);
               guard(async () => {
-                setSavingWeights(true);
                 setConfig(await api.updateConfig(cma.id, { weights }));
                 if (comparables && comparables.length > 0 && cma.subject) {
                   setComparables(await api.recalcSimilarity(cma.id));
                 }
-                setSavingWeights(false);
-              })
-            }
+              }).finally(() => setSavingWeights(false));
+            }}
           />
         </Card>
       )}

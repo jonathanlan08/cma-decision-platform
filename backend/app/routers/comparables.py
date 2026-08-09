@@ -63,6 +63,10 @@ def add_comparable(cma_id: int, payload: ComparableIn, db: Session = Depends(get
 @router.post("/cmas/{cma_id}/comparables/import-csv", response_model=CSVImportResult)
 async def import_csv(cma_id: int, file: UploadFile = File(...), db: Session = Depends(get_db)):
     cma = get_cma_or_404(db, cma_id)
+    # Reject oversized uploads before reading them into memory when the size
+    # is known (Starlette spools uploads, so .size is available).
+    if file.size is not None and file.size > CSV_MAX_BYTES:
+        raise HTTPException(status_code=413, detail="CSV file exceeds the 2 MB limit")
     raw = await file.read()
     if len(raw) > CSV_MAX_BYTES:
         raise HTTPException(status_code=413, detail="CSV file exceeds the 2 MB limit")

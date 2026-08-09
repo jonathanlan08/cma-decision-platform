@@ -22,6 +22,7 @@ from ..services.adjustments import (
     suggest_adjustments,
 )
 from ..services.audit import log_event
+from ..services.fingerprint import valuation_fingerprint
 from ..services.reconciliation import reconcile
 from ..services.sensitivity import sensitivity_analysis
 from .helpers import (
@@ -32,6 +33,7 @@ from .helpers import (
     get_comparable_or_404,
     refresh_similarity,
     touch,
+    valuation_out,
 )
 
 router = APIRouter(prefix="/api", tags=["Adjustments & valuation"])
@@ -96,20 +98,33 @@ def update_adjustment(adjustment_id: int, payload: AdjustmentUpdate,
         raise HTTPException(status_code=404, detail="Adjustment not found")
     changes = payload.model_dump(exclude_unset=True)
     old_amount = adj.amount
-    if "amount" in changes and changes["amount"] != adj.amount:
+    amount_changed = "amount" in changes and changes["amount"] != adj.amount
+    explanation_changed = ("explanation" in changes
+                           and changes["explanation"] != adj.explanation)
+    if amount_changed:
         adj.amount = changes["amount"]
         # An edited suggested adjustment becomes a manual override.
         adj.source = "manual"
     if "explanation" in changes:
         adj.explanation = changes["explanation"]
-    log_event(db, adj.comparable.cma_id, "adjustment_edited",
-              "Changed %s adjustment on %s from $%s to $%s (manual override)."
-              % (adj.category, adj.comparable.address,
-                 format(round(old_amount), ","), format(round(adj.amount), ",")),
-              entity_type="adjustment", entity_id=adj.id,
-              details={"from": old_amount, "to": adj.amount,
-                       "explanation": adj.explanation})
-    touch(adj.comparable.cma)
+    # Only real changes reach the audit trail; a no-op PATCH must not create a
+    # misleading "amount changed" event.
+    if amount_changed:
+        log_event(db, adj.comparable.cma_id, "adjustment_edited",
+                  "Changed %s adjustment on %s from $%s to $%s (manual override)."
+                  % (adj.category, adj.comparable.address,
+                     format(round(old_amount), ","), format(round(adj.amount), ",")),
+                  entity_type="adjustment", entity_id=adj.id,
+                  details={"from": old_amount, "to": adj.amount,
+                           "explanation": adj.explanation})
+    elif explanation_changed:
+        log_event(db, adj.comparable.cma_id, "adjustment_explanation_updated",
+                  "Updated the explanation on the %s adjustment for %s."
+                  % (adj.category, adj.comparable.address),
+                  entity_type="adjustment", entity_id=adj.id,
+                  details={"explanation": adj.explanation})
+    if amount_changed or explanation_changed:
+        touch(adj.comparable.cma)
     db.commit()
     db.refresh(adj)
     return AdjustmentOut.model_validate(adj)
@@ -156,7 +171,7 @@ def get_latest_valuation(cma_id: int, db: Session = Depends(get_db)):
     cma = get_cma_or_404(db, cma_id)
     if not cma.valuations:
         raise HTTPException(status_code=404, detail="No valuation has been calculated yet")
-    return ValuationOut.model_validate(cma.valuations[-1])
+    return valuation_out(cma, cma.valuations[-1])
 
 
 @router.post("/cmas/{cma_id}/valuation/recalculate", response_model=ValuationOut)
@@ -198,6 +213,8 @@ def recalculate_valuation(cma_id: int, db: Session = Depends(get_db)):
         dispersion=result["dispersion"],
         cov=result["cov"],
         included_count=result["included_count"],
+        effective_count=result["effective_count"],
+        input_fingerprint=valuation_fingerprint(cma, config),
         warnings=result["warnings"],
         per_comparable=result["per_comparable"],
     )
@@ -223,4 +240,4 @@ def recalculate_valuation(cma_id: int, db: Session = Depends(get_db)):
     touch(cma)
     db.commit()
     db.refresh(valuation)
-    return ValuationOut.model_validate(valuation)
+    return valuation_out(cma, valuation)
