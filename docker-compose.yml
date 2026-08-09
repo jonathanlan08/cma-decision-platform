@@ -1,0 +1,23 @@
+# Optional local PostgreSQL for the CMA Decision Platform.
+# The app defaults to SQLite; use this when you want Postgres parity:
+#   docker compose up -d db
+#   export DATABASE_URL=postgresql+psycopg2://cma:cma_dev_password@localhost:5432/cma
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-cma}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-cma_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-cma}
+    ports:
+      - "5432:5432"
+    volumes:
+      - cma_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-cma}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  cma_pgdata:

@@ -1,0 +1,2 @@
+address,city,zip_code,latitude,longitude,property_type,sale_price,sale_date,square_feet,lot_size,bedrooms,bathrooms,year_built,condition,parking_spaces,pool,distance_from_subject,notes,source
+1234 Example St,Arcadia,91006,34.1397,-118.0353,single_family,1250000,2026-05-15,1850,7200,3,2,1955,good,2,false,0.8,Synthetic example row - replace with real data,synthetic-demo

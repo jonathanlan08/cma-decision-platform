@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Comparative Market Analysis — {{ subject.address if subject else title }}</title>
+<style>
+  :root { --ink: #1a202c; --muted: #64748b; --accent: #1d4ed8; --line: #e2e8f0; }
+  * { box-sizing: border-box; }
+  body { font-family: Georgia, "Times New Roman", serif; color: var(--ink);
+         margin: 0; font-size: 11pt; line-height: 1.5; }
+  .page { max-width: 7.6in; margin: 0 auto; padding: 0.6in 0.4in; }
+  h1, h2, h3 { font-family: "Helvetica Neue", Arial, sans-serif; line-height: 1.2; }
+  h1 { font-size: 24pt; margin: 0 0 4pt; }
+  h2 { font-size: 14pt; border-bottom: 2px solid var(--accent); padding-bottom: 4pt;
+       margin: 24pt 0 10pt; page-break-after: avoid; }
+  h3 { font-size: 11pt; margin: 14pt 0 6pt; }
+  table { width: 100%; border-collapse: collapse; font-family: "Helvetica Neue", Arial,
+          sans-serif; font-size: 8.5pt; margin: 8pt 0; }
+  th, td { border: 1px solid var(--line); padding: 4pt 6pt; text-align: left;
+           vertical-align: top; }
+  th { background: #f1f5f9; font-weight: 600; }
+  td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .cover { text-align: center; padding-top: 1.8in; page-break-after: always; }
+  .cover .rule { width: 1.2in; height: 3px; background: var(--accent); margin: 14pt auto; }
+  .muted { color: var(--muted); }
+  .small { font-size: 8.5pt; }
+  .kv { display: grid; grid-template-columns: 1fr 1fr; gap: 2pt 24pt; }
+  .kv div { display: flex; justify-content: space-between; border-bottom: 1px dotted
+            var(--line); padding: 2pt 0; font-size: 10pt; }
+  .range-box { border: 2px solid var(--accent); padding: 12pt; text-align: center;
+               margin: 10pt 0; }
+  .range-box .central { font-size: 20pt; font-weight: 700;
+                        font-family: "Helvetica Neue", Arial, sans-serif; }
+  .warn { background: #fffbeb; border: 1px solid #f59e0b; padding: 6pt 8pt;
+          font-size: 9pt; margin: 4pt 0; }
+  .disclaimer { border: 1px solid var(--line); background: #f8fafc; padding: 10pt;
+                font-size: 8.5pt; margin-top: 16pt; }
+  .pos { color: #047857; } .neg { color: #b91c1c; }
+  @media print { .page { padding: 0.2in 0; } }
+  @page { size: letter; margin: 0.6in; }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <div class="cover">
+    <p class="muted" style="letter-spacing:2px;text-transform:uppercase;font-size:9pt;">
+      Comparative Market Analysis</p>
+    <h1>{{ subject.address if subject else title }}</h1>
+    {% if subject and subject.city %}
+      <p class="muted">{{ subject.city }}{% if subject.zip_code %}, CA {{ subject.zip_code }}{% endif %}</p>
+    {% endif %}
+    <div class="rule"></div>
+    {% if valuation and valuation.central_estimate %}
+      <p class="muted small">Indicated value range (analytical estimate)</p>
+      <p style="font-size:16pt;font-weight:600;">
+        {{ valuation.low_estimate | money }} – {{ valuation.high_estimate | money }}</p>
+    {% endif %}
+    <p class="muted small">Prepared {{ generated_on }} · Methodology {{ calc_version }}</p>
+    <p class="muted small" style="margin-top:0.8in;max-width:5in;margin-left:auto;margin-right:auto;">
+      Informational estimate for discussion purposes — not an appraisal.
+      See the assumptions and limitations section at the end of this report.</p>
+  </div>
+
+  <h2>Subject Property</h2>
+  {% if subject %}
+  <div class="kv">
+    <div><span>Address</span><strong>{{ subject.address }}</strong></div>
+    <div><span>Property type</span><strong>{{ subject.property_type | replace("_", " ") }}</strong></div>
+    <div><span>Bedrooms</span><strong>{{ subject.bedrooms if subject.bedrooms is not none else "—" }}</strong></div>
+    <div><span>Bathrooms</span><strong>{{ subject.bathrooms if subject.bathrooms is not none else "—" }}</strong></div>
+    <div><span>Living area</span><strong>{{ "%.0f"|format(subject.square_feet) if subject.square_feet else "—" }} sq ft</strong></div>
+    <div><span>Lot size</span><strong>{{ "%.0f"|format(subject.lot_size) if subject.lot_size else "—" }} sq ft</strong></div>
+    <div><span>Year built</span><strong>{{ subject.year_built if subject.year_built else "—" }}</strong></div>
+    <div><span>Condition</span><strong>{{ subject.condition if subject.condition else "—" }}</strong></div>
+    <div><span>Parking</span><strong>{{ subject.parking_spaces if subject.parking_spaces is not none else "—" }} space(s)</strong></div>
+    <div><span>Pool</span><strong>{{ "Yes" if subject.has_pool else "No" }}</strong></div>
+  </div>
+  {% if subject.renovation_notes %}
+    <h3>Renovations & updates</h3><p>{{ subject.renovation_notes }}</p>
+  {% endif %}
+  {% else %}<p class="muted">No subject property entered.</p>{% endif %}
+
+  <h2>How This Analysis Works</h2>
+  <p>This analysis follows the sales-comparison approach used in residential
+  brokerage. Recently sold, similar properties are selected and scored for
+  similarity across {{ weights | length }} weighted factors (location, size,
+  type, recency, and features). Each comparable's sale price is then adjusted
+  for measurable differences from the subject — when a comparable is inferior
+  to the subject the price adjusts upward; when superior it adjusts downward.
+  The adjusted values are reconciled into a value range using the similarity
+  weights shown below. Every adjustment amount comes from the stated assumption
+  set, which the preparing agent can and should tailor; none are market
+  standards. The range is an analytical estimate, not a statistical confidence
+  interval.</p>
+
+  <h2>Comparable Sales</h2>
+  <table>
+    <caption class="small muted" style="caption-side:bottom;text-align:left;">
+      Sale prices are as recorded in the source data. Distance is from the subject.</caption>
+    <thead><tr>
+      <th scope="col">Address</th><th scope="col" class="num">Sale price</th>
+      <th scope="col">Sale date</th><th scope="col" class="num">Sq ft</th>
+      <th scope="col" class="num">Bd</th><th scope="col" class="num">Ba</th>
+      <th scope="col" class="num">Dist (mi)</th><th scope="col" class="num">Similarity</th>
+      <th scope="col">Status</th>
+    </tr></thead>
+    <tbody>
+    {% for c in comparables %}
+      <tr>
+        <td>{{ c.address }}{% if c.city %}, {{ c.city }}{% endif %}</td>
+        <td class="num">{{ c.sale_price | money }}</td>
+        <td>{{ c.sale_date }}</td>
+        <td class="num">{{ "%.0f" | format(c.square_feet) }}</td>
+        <td class="num">{{ c.bedrooms }}</td>
+        <td class="num">{{ "%.1f" | format(c.bathrooms) }}</td>
+        <td class="num">{{ "%.2f" | format(c.distance) if c.distance is not none else "—" }}</td>
+        <td class="num">{{ "%.0f" | format(c.similarity) if c.similarity is not none else "—" }}</td>
+        <td>{{ "Included" if c.included else "Excluded" }}{% if c.exclusion_reason %} — {{ c.exclusion_reason }}{% endif %}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted">Similarity is a 0–100 weighted score across:
+    {% for name, w in weights.items() %}{{ name | replace("_", " ") }} ({{ "%.0f" | format(w * 100) }}%){% if not loop.last %}, {% endif %}{% endfor %}.
+    Weights are analysis-specific settings chosen by the preparing agent.</p>
+
+  <h2>Adjustments</h2>
+  {% for c in included %}
+    <h3>{{ c.address }} — sold {{ c.sale_price | money }} on {{ c.sale_date }}</h3>
+    {% if c.adjustments %}
+    <table>
+      <thead><tr>
+        <th scope="col">Category</th><th scope="col">Subject</th>
+        <th scope="col">Comparable</th><th scope="col">Basis</th>
+        <th scope="col" class="num">Adjustment</th><th scope="col">Origin</th>
+      </tr></thead>
+      <tbody>
+      {% for a in c.adjustments %}
+        <tr>
+          <td>{{ a.category | replace("_", " ") }}</td>
+          <td>{{ a.subject_value or "—" }}</td>
+          <td>{{ a.comparable_value or "—" }}</td>
+          <td class="small">{{ a.unit_description or "—" }}</td>
+          <td class="num {{ 'pos' if a.amount > 0 else 'neg' if a.amount < 0 else '' }}">
+            {{ a.amount | money }}</td>
+          <td>{{ "Suggested" if a.source == "suggested" else "Manual" }}</td>
+        </tr>
+      {% endfor %}
+        <tr>
+          <th scope="row" colspan="4">Adjusted value</th>
+          <th class="num" colspan="2">{{ c.adjusted_price | money }}
+            {% if c.adjusted_ppsf %}({{ c.adjusted_ppsf | money }}/sq ft){% endif %}</th>
+        </tr>
+      </tbody>
+    </table>
+    {% else %}<p class="small muted">No adjustments applied.</p>{% endif %}
+  {% endfor %}
+
+  <h2>Value Reconciliation</h2>
+  {% if valuation and valuation.central_estimate %}
+  <table>
+    <thead><tr>
+      <th scope="col">Comparable</th><th scope="col" class="num">Adjusted value</th>
+      <th scope="col" class="num">Similarity</th><th scope="col" class="num">Weight override</th>
+      <th scope="col" class="num">Influence</th>
+    </tr></thead>
+    <tbody>
+    {% for entry in valuation.per_comparable %}
+      <tr>
+        <td>{{ entry.address }}</td>
+        <td class="num">{{ entry.adjusted_price | money }}</td>
+        <td class="num">{{ "%.0f" | format(entry.similarity) if entry.similarity is not none else "—" }}</td>
+        <td class="num">{{ "%.2f" | format(entry.multiplier) }}×</td>
+        <td class="num">{{ "%.1f" | format(entry.influence_pct) }}%</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <div class="range-box">
+    <p class="muted small" style="margin:0;">Indicated value range (analytical estimate)</p>
+    <p class="central">{{ valuation.central_estimate | money }}</p>
+    <p style="margin:0;">{{ valuation.low_estimate | money }} — {{ valuation.high_estimate | money }}</p>
+    <p class="muted small" style="margin:4pt 0 0;">
+      Median adjusted value {{ valuation.median_adjusted | money }}
+      {% if valuation.weighted_ppsf %} · Weighted {{ valuation.weighted_ppsf | money }}/sq ft{% endif %}
+      · {{ valuation.included_count }} comparable(s)</p>
+  </div>
+  {% for w in valuation.warnings %}<p class="warn">⚠ {{ w.message }}</p>{% endfor %}
+  {% else %}<p class="muted">No valuation has been calculated.</p>{% endif %}
+
+  <h2>Listing Strategy Comparison</h2>
+  {% if strategies %}
+  <table>
+    <thead><tr>
+      <th scope="col">Strategy</th><th scope="col" class="num">List price</th>
+      <th scope="col" class="num">vs. indicated value</th>
+      <th scope="col">Buyer interest</th><th scope="col">Reduction risk</th>
+      <th scope="col">Notes</th>
+    </tr></thead>
+    <tbody>
+    {% for s in strategies %}
+      <tr>
+        <td>{{ s.name }}{% if s.is_user_modified %} (agent-set price){% endif %}</td>
+        <td class="num">{{ s.list_price | money }}</td>
+        <td class="num">{{ s.derived.pct_vs_value | pct }}</td>
+        <td>{{ s.derived.buyer_interest }}</td>
+        <td>{{ s.derived.price_reduction_risk }}</td>
+        <td class="small">{{ s.derived.marketing_notes }}</td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted">Buyer interest and price-reduction risk are qualitative
+  scenario labels derived from each price's distance to the indicated value.
+  They are not validated predictions of market outcomes.</p>
+  {% else %}<p class="muted">No strategies generated.</p>{% endif %}
+
+  <h2>Assumptions Used</h2>
+  <table>
+    <thead><tr><th scope="col">Assumption</th><th scope="col" class="num">Value</th></tr></thead>
+    <tbody>
+      {% for name, value in assumptions.items() %}
+      <tr><td>{{ name | replace("_", " ") }}</td><td class="num">{{ value }}</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  <p class="small muted">These are analysis-specific sample assumptions entered or
+  accepted by the preparing agent — not market standards. Changing any of them
+  changes the result; all changes are recorded in the analysis audit trail.</p>
+
+  <div class="disclaimer">
+    <strong>Limitations & disclaimer.</strong> {{ disclaimer }}
+    Report generated {{ generated_on }} using methodology version {{ calc_version }}.
+  </div>
+
+</div>
+</body>
+</html>

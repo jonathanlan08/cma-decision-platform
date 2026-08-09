@@ -1,0 +1,203 @@
+"""Adjustment management and valuation reconciliation."""
+from typing import List
+
+from fastapi import APIRouter, Depends, HTTPException
+from sqlalchemy.orm import Session
+
+from ..constants import CALC_VERSION
+from ..database import get_db
+from ..models import Adjustment, ValuationResult
+from ..schemas import (
+    AdjustmentIn,
+    AdjustmentOut,
+    AdjustmentUpdate,
+    ComparableOut,
+    ValuationOut,
+)
+from ..services.adjustments import (
+    adjusted_ppsf,
+    adjusted_price,
+    adjustment_percentages,
+    suggest_adjustments,
+)
+from ..services.audit import log_event
+from ..services.reconciliation import reconcile
+from .helpers import (
+    comparable_out,
+    ensure_config,
+    ensure_selection,
+    get_cma_or_404,
+    get_comparable_or_404,
+    refresh_similarity,
+    touch,
+)
+
+router = APIRouter(prefix="/api", tags=["Adjustments & valuation"])
+
+
+@router.post("/cmas/{cma_id}/adjustments/suggest", response_model=List[ComparableOut])
+def suggest_all_adjustments(cma_id: int, db: Session = Depends(get_db)):
+    """Regenerate suggested adjustments for every comparable from the current
+    assumption set. Manual adjustments are preserved; previous suggested rows
+    are replaced (that replacement is audit-logged)."""
+    cma = get_cma_or_404(db, cma_id)
+    if cma.subject is None:
+        raise HTTPException(status_code=400,
+                            detail="Enter the subject property before suggesting adjustments")
+    config = ensure_config(db, cma)
+    total = 0
+    for comp in cma.comparables:
+        removed = [a for a in comp.adjustments if a.source == "suggested"]
+        for adj in removed:
+            db.delete(adj)
+        for spec in suggest_adjustments(cma.subject, comp, config.assumptions):
+            db.add(Adjustment(comparable_id=comp.id, source="suggested", **spec))
+            total += 1
+    log_event(
+        db, cma.id, "adjustments_suggested",
+        "Generated %d suggested adjustment(s) across %d comparable(s) from the "
+        "current assumption set. Manual adjustments were preserved."
+        % (total, len(cma.comparables)),
+        details={"assumptions": config.assumptions},
+    )
+    touch(cma)
+    db.commit()
+    db.expire_all()
+    cma = get_cma_or_404(db, cma_id)
+    return [comparable_out(comp, cma.subject) for comp in cma.comparables]
+
+
+@router.post("/comparables/{comp_id}/adjustments", response_model=AdjustmentOut,
+             status_code=201)
+def add_manual_adjustment(comp_id: int, payload: AdjustmentIn, db: Session = Depends(get_db)):
+    comp = get_comparable_or_404(db, comp_id)
+    adj = Adjustment(comparable_id=comp.id, source="manual", **payload.model_dump())
+    db.add(adj)
+    db.flush()
+    log_event(db, comp.cma_id, "adjustment_added",
+              "Added manual %s adjustment of $%s to %s."
+              % (adj.category, format(round(adj.amount), ","), comp.address),
+              entity_type="adjustment", entity_id=adj.id,
+              details={"category": adj.category, "amount": adj.amount,
+                       "explanation": adj.explanation})
+    touch(comp.cma)
+    db.commit()
+    db.refresh(adj)
+    return AdjustmentOut.model_validate(adj)
+
+
+@router.patch("/adjustments/{adjustment_id}", response_model=AdjustmentOut)
+def update_adjustment(adjustment_id: int, payload: AdjustmentUpdate,
+                      db: Session = Depends(get_db)):
+    adj = db.get(Adjustment, adjustment_id)
+    if adj is None:
+        raise HTTPException(status_code=404, detail="Adjustment not found")
+    changes = payload.model_dump(exclude_unset=True)
+    old_amount = adj.amount
+    if "amount" in changes and changes["amount"] != adj.amount:
+        adj.amount = changes["amount"]
+        # An edited suggested adjustment becomes a manual override.
+        adj.source = "manual"
+    if "explanation" in changes:
+        adj.explanation = changes["explanation"]
+    log_event(db, adj.comparable.cma_id, "adjustment_edited",
+              "Changed %s adjustment on %s from $%s to $%s (manual override)."
+              % (adj.category, adj.comparable.address,
+                 format(round(old_amount), ","), format(round(adj.amount), ",")),
+              entity_type="adjustment", entity_id=adj.id,
+              details={"from": old_amount, "to": adj.amount,
+                       "explanation": adj.explanation})
+    touch(adj.comparable.cma)
+    db.commit()
+    db.refresh(adj)
+    return AdjustmentOut.model_validate(adj)
+
+
+@router.delete("/adjustments/{adjustment_id}", status_code=204)
+def delete_adjustment(adjustment_id: int, db: Session = Depends(get_db)):
+    adj = db.get(Adjustment, adjustment_id)
+    if adj is None:
+        raise HTTPException(status_code=404, detail="Adjustment not found")
+    log_event(db, adj.comparable.cma_id, "adjustment_deleted",
+              "Removed %s adjustment of $%s from %s."
+              % (adj.category, format(round(adj.amount), ","), adj.comparable.address),
+              entity_type="adjustment", entity_id=adj.id)
+    cma = adj.comparable.cma
+    db.delete(adj)
+    touch(cma)
+    db.commit()
+
+
+@router.get("/cmas/{cma_id}/valuation", response_model=ValuationOut)
+def get_latest_valuation(cma_id: int, db: Session = Depends(get_db)):
+    cma = get_cma_or_404(db, cma_id)
+    if not cma.valuations:
+        raise HTTPException(status_code=404, detail="No valuation has been calculated yet")
+    return ValuationOut.model_validate(cma.valuations[-1])
+
+
+@router.post("/cmas/{cma_id}/valuation/recalculate", response_model=ValuationOut)
+def recalculate_valuation(cma_id: int, db: Session = Depends(get_db)):
+    """Refresh similarity scores, then reconcile all included comparables into
+    a stored ValuationResult (kept as history for the audit trail)."""
+    cma = get_cma_or_404(db, cma_id)
+    config = ensure_config(db, cma)
+    refresh_similarity(db, cma)
+
+    items = []
+    for comp in cma.comparables:
+        selection = ensure_selection(db, comp)
+        if not selection.included:
+            continue
+        amounts = [a.amount for a in comp.adjustments]
+        adj_price = adjusted_price(comp.sale_price, amounts)
+        pcts = adjustment_percentages(comp.sale_price, amounts)
+        items.append({
+            "comp_id": comp.id,
+            "address": comp.address,
+            "adjusted_price": adj_price,
+            "ppsf": adjusted_ppsf(adj_price, comp.square_feet),
+            "similarity": selection.similarity_score,
+            "multiplier": selection.user_weight_multiplier,
+            "sale_date": comp.sale_date,
+            "gross_pct": pcts["gross_pct"],
+        })
+
+    result = reconcile(items, config.reconciliation)
+    valuation = ValuationResult(
+        cma_id=cma.id,
+        calc_version=CALC_VERSION,
+        central_estimate=result["central_estimate"],
+        low_estimate=result["low_estimate"],
+        high_estimate=result["high_estimate"],
+        median_adjusted=result["median_adjusted"],
+        weighted_ppsf=result["weighted_ppsf"],
+        dispersion=result["dispersion"],
+        cov=result["cov"],
+        included_count=result["included_count"],
+        warnings=result["warnings"],
+        per_comparable=result["per_comparable"],
+    )
+    db.add(valuation)
+    db.flush()
+    central = result["central_estimate"]
+    log_event(
+        db, cma.id, "valuation_recalculated",
+        "Recalculated the valuation from %d included comparable(s): central "
+        "estimate %s, range %s – %s. (%s)" % (
+            result["included_count"],
+            "$%s" % format(round(central), ",") if central else "n/a",
+            "$%s" % format(round(result["low_estimate"]), ",")
+            if result["low_estimate"] else "n/a",
+            "$%s" % format(round(result["high_estimate"]), ",")
+            if result["high_estimate"] else "n/a",
+            CALC_VERSION,
+        ),
+        entity_type="valuation", entity_id=valuation.id,
+        details={"warnings": result["warnings"],
+                 "per_comparable": result["per_comparable"]},
+    )
+    touch(cma)
+    db.commit()
+    db.refresh(valuation)
+    return ValuationOut.model_validate(valuation)

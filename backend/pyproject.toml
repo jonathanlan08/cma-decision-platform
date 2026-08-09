@@ -1,0 +1,23 @@
+[project]
+name = "cma-backend"
+version = "0.1.0"
+description = "CMA Decision Platform backend — transparent comparative market analysis engine"
+requires-python = ">=3.9"
+
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = ["alembic/versions"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "C4"]
+ignore = [
+  "UP007", # keep Optional[X] — runtime-evaluated annotations must work on 3.9
+  "UP006", # keep typing.List/Dict where used for the same reason
+  "UP045", # keep Optional[X] over X | None (3.9 runtime compatibility)
+  "B008",  # FastAPI Depends() in argument defaults is idiomatic
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

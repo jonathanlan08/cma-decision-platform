@@ -1,0 +1,21 @@
+address,city,zip_code,latitude,longitude,property_type,sale_price,sale_date,square_feet,lot_size,bedrooms,bathrooms,year_built,condition,parking_spaces,pool,distance_from_subject,notes,source
+1210 Demo Oak Ave,Arcadia,91006,34.1362,-118.0341,single_family,1285000,2026-06-12,1820,7100,3,2,1956,good,2,false,0.4,Synthetic demonstration sale,synthetic-demo
+2455 Sample Maple Dr,Arcadia,91007,34.1301,-118.0452,single_family,1342000,2026-05-03,1960,7600,4,2,1961,good,2,false,0.7,Synthetic demonstration sale,synthetic-demo
+318 Example Palm Rd,Arcadia,91006,34.1408,-118.0299,single_family,1198000,2026-04-18,1705,6800,3,2,1952,average,2,false,0.8,Synthetic demonstration sale,synthetic-demo
+4521 Placeholder Ct,Temple City,91780,34.1120,-118.0574,single_family,1120000,2026-06-28,1750,7300,3,2,1958,average,2,false,1.9,Synthetic demonstration sale,synthetic-demo
+987 Fictional Elm St,Temple City,91780,34.1077,-118.0611,single_family,1189000,2026-03-22,1880,7500,3,2.5,1963,good,2,true,2.1,Synthetic demonstration sale — has pool,synthetic-demo
+1533 Mock Cypress Ln,Arcadia,91007,34.1275,-118.0388,single_family,1410000,2026-07-09,2050,8000,4,3,1968,good,2,false,0.6,Synthetic demonstration sale,synthetic-demo
+762 Demo Sierra Vista,Monrovia,91016,34.1418,-118.0043,single_family,1055000,2026-05-27,1690,6900,3,2,1949,average,1,false,2.4,Synthetic demonstration sale,synthetic-demo
+2214 Sample Live Oak,Arcadia,91006,34.1389,-118.0322,single_family,1329000,2026-02-14,1900,7200,3,2,1959,good,2,false,0.5,Synthetic demonstration sale — older sale,synthetic-demo
+605 Example Camellia,San Gabriel,91775,34.1132,-118.0938,single_family,1088000,2026-06-05,1720,6700,3,2,1954,average,2,false,3.4,Synthetic demonstration sale — farther out,synthetic-demo
+1845 Placeholder Way,Arcadia,91006,34.1330,-118.0367,single_family,1265000,2026-07-21,1800,7000,3,2,1957,good,2,false,0.2,Synthetic demonstration sale — very close,synthetic-demo
+921 Mock Huntington,Arcadia,91007,34.1288,-118.0490,condo,890000,2026-06-16,1450,0,3,2,1985,good,2,false,0.9,Synthetic demonstration sale — condo,synthetic-demo
+3310 Demo Longden Ave,Temple City,91780,34.1055,-118.0530,single_family,1235000,2026-04-30,1925,7800,4,2,1965,good,2,false,2.2,Synthetic demonstration sale,synthetic-demo
+477 Fictional Santa Anita,Arcadia,91006,34.1451,-118.0330,single_family,1520000,2026-05-19,2280,8500,4,3,1972,excellent,3,true,0.9,Synthetic demonstration sale — larger and updated,synthetic-demo
+1688 Sample Baldwin Ave,Arcadia,91007,34.1259,-118.0421,single_family,1305000,2026-03-08,1870,7400,3,2.5,1960,good,2,false,0.8,Synthetic demonstration sale,synthetic-demo
+2090 Example Duarte Rd,Arcadia,91006,34.1338,-118.0295,single_family,1244000,2026-06-25,1780,7100,3,2,1955,average,2,false,0.6,Synthetic demonstration sale,synthetic-demo
+815 Demo Las Tunas Dr,Temple City,91780,34.1085,-118.0655,single_family,1075000,2026-02-27,1660,6600,3,1.5,1951,fair,1,false,2.3,Synthetic demonstration sale — needs work,synthetic-demo
+1275 Mock Colorado Blvd,Monrovia,91016,34.1440,-118.0090,single_family,1148000,2026-07-02,1810,7200,3,2,1957,good,2,false,2.2,Synthetic demonstration sale,synthetic-demo
+556 Placeholder Foothill,Arcadia,91006,34.1420,-118.0378,single_family,1378000,2026-06-01,2000,7700,4,2.5,1966,good,2,true,0.7,Synthetic demonstration sale — has pool,synthetic-demo
+1902 Sample Naomi Ave,Arcadia,91007,34.1295,-118.0356,single_family,1222000,2026-05-11,1740,6950,3,2,1953,average,2,false,0.4,Synthetic demonstration sale,synthetic-demo
+3675 Demo Rosemead Blvd,Rosemead,91770,34.0805,-118.0727,single_family,968000,2026-04-09,1650,6500,3,2,1950,average,2,false,4.6,Synthetic demonstration sale — distant comp,synthetic-demo
