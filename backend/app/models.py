@@ -73,7 +73,8 @@ class SubjectProperty(Base):
     zip_code: Mapped[Optional[str]] = mapped_column(String(10), nullable=True)
     latitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     longitude: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
-    property_type: Mapped[str] = mapped_column(String(30), default="single_family")
+    # Nullable like the comparables: unknown stays unknown, never guessed.
+    property_type: Mapped[Optional[str]] = mapped_column(String(30), nullable=True)
     bedrooms: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     bathrooms: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
     square_feet: Mapped[Optional[float]] = mapped_column(Float, nullable=True)
@@ -81,7 +82,7 @@ class SubjectProperty(Base):
     year_built: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     condition: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     parking_spaces: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    has_pool: Mapped[bool] = mapped_column(Boolean, default=False)
+    has_pool: Mapped[Optional[bool]] = mapped_column(Boolean, nullable=True)
     renovation_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     agent_notes: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
@@ -181,10 +182,11 @@ class WeightConfiguration(Base):
     assumptions: Mapped[dict] = mapped_column(JSON)
     reconciliation: Mapped[dict] = mapped_column(JSON)
     # Snapshot of `assumptions` taken when suggested adjustments were last
-    # generated. A mismatch with the current assumptions means the stored
-    # suggested amounts are outdated (provenance check; null = never generated
-    # or pre-dates this column).
+    # generated (kept for audit visibility of WHICH values produced them).
     suggestions_assumptions: Mapped[Optional[dict]] = mapped_column(JSON, nullable=True)
+    # SHA-256 of ALL suggestion inputs (assumptions + subject + comparable
+    # fields) at generation time; the authoritative outdatedness check.
+    suggestions_fingerprint: Mapped[Optional[str]] = mapped_column(String(64), nullable=True)
     updated_at: Mapped[datetime] = mapped_column(DateTime, default=utcnow, onupdate=utcnow)
 
     cma: Mapped["CMAAnalysis"] = relationship(back_populates="weight_config")

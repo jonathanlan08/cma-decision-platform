@@ -42,7 +42,8 @@ poor < fair < average < good < excellent.
 | year_built | int? | 1800..next year |
 | condition | str? | ordinal scale above |
 | parking_spaces | int? | |
-| has_pool | bool | default false |
+| property_type | str? | null = unknown; skipped in scoring, never guessed |
+| has_pool | bool? | null = unknown; skipped in adjustments, never guessed |
 | renovation_notes, agent_notes | text? | agent_notes never appears in reports |
 
 ## comparable_properties
@@ -90,7 +91,8 @@ Same physical fields as the subject, plus:
 | similarity_params | JSON | curve caps (max distance, tolerances, …) |
 | assumptions | JSON | dollar assumptions for suggested adjustments |
 | reconciliation | JSON | range_k, warning thresholds |
-| suggestions_assumptions | JSON? | assumption snapshot from the last suggestion run; mismatch with `assumptions` = outdated suggestions |
+| suggestions_assumptions | JSON? | assumption snapshot from the last suggestion run (audit visibility) |
+| suggestions_fingerprint | str? | SHA-256 of ALL suggestion inputs (assumptions + subject + comparable fields); mismatch = outdated suggestions |
 
 ## valuation_results (append-only history)
 

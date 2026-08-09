@@ -59,6 +59,7 @@ export default function AdjustmentsPage() {
     setSavingAssumptions(true);
     await guard(async () => {
       setConfig(await api.updateConfig(cma.id, { assumptions }));
+      reload(); // changed assumptions flip the header's staleness flag
     });
     setSavingAssumptions(false);
   }

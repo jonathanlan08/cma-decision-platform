@@ -249,13 +249,16 @@ def test_report_blocked_until_outputs_are_consistent(client):
     assert response.status_code == 409
     assert "Recalculate" in response.json()["detail"]
 
-    # Recalculate only: strategies are still from the old valuation.
+    # Recalculate only: the suggestions were derived from the old sale price
+    # (and the strategies from the old valuation), so the report stays blocked.
     client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
     response = client.post("/api/cmas/%d/report" % cma_id)
     assert response.status_code == 409
-    assert "strategies" in response.json()["detail"].lower()
 
-    # Regenerate strategies: the full chain is consistent again.
+    # Full repair chain: regenerate suggestions, recalculate, refresh
+    # strategies. Only then is the report consistent again.
+    client.post("/api/cmas/%d/adjustments/suggest" % cma_id)
+    client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
     client.post("/api/cmas/%d/strategies/generate" % cma_id)
     assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
 
@@ -355,3 +358,68 @@ def test_strategies_record_their_source_valuation(client):
     new_valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
     strategies = client.post("/api/cmas/%d/strategies/generate" % cma_id).json()
     assert all(s["valuation_id"] == new_valuation["id"] for s in strategies)
+
+
+# --- Third audit round: full suggestion provenance, caps, stale gates --------
+
+def test_subject_edit_marks_suggestions_outdated(client):
+    """Suggested amounts derive from subject fields too: resizing the subject
+    must invalidate them, not just assumption changes."""
+    cma_id = _prepare_valued_cma(client)
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+    client.put("/api/cmas/%d/subject" % cma_id, json=dict(SUBJECT, square_feet=2400))
+    assert client.get("/api/cmas/%d/config" % cma_id).json()[
+        "suggestions_outdated"] is True
+    valuation = client.post("/api/cmas/%d/valuation/recalculate" % cma_id).json()
+    assert "outdated_suggestions" in [w["code"] for w in valuation["warnings"]]
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 409
+
+    # The full repair chain unblocks it.
+    client.post("/api/cmas/%d/adjustments/suggest" % cma_id)
+    client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
+    client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert client.post("/api/cmas/%d/report" % cma_id).status_code == 201
+
+
+def test_new_comparable_marks_suggestions_outdated(client):
+    cma_id = _prepare_valued_cma(client)
+    text = CSV_HEADER + "\n1 Newcomer St,1000000,2026-05-01,1600,3,2\n"
+    client.post("/api/cmas/%d/comparables/import-csv" % cma_id,
+                files={"file": ("new.csv", text.encode(), "text/csv")})
+    assert client.get("/api/cmas/%d/config" % cma_id).json()[
+        "suggestions_outdated"] is True
+
+
+def test_stale_valuation_blocks_strategy_generation(client):
+    cma_id = _prepare_valued_cma(client)
+    comp = client.get("/api/cmas/%d/comparables" % cma_id).json()[0]
+    client.patch("/api/comparables/%d" % comp["id"], json={"sale_price": 777_777})
+    response = client.post("/api/cmas/%d/strategies/generate" % cma_id)
+    assert response.status_code == 409
+    assert "Recalculate" in response.json()["detail"]
+    client.post("/api/cmas/%d/valuation/recalculate" % cma_id)
+    assert client.post("/api/cmas/%d/strategies/generate" % cma_id).status_code == 200
+
+
+def test_extreme_assumptions_and_subject_are_rejected(client):
+    cma_id = create_cma(client, "Extremes")
+    assert client.put("/api/cmas/%d/config" % cma_id,
+                      json={"assumptions": {"gla_per_sqft": 1e12}}).status_code == 422
+    assert client.put(
+        "/api/cmas/%d/config" % cma_id,
+        json={"similarity_params": {"bedroom_cap": 1e12}}).status_code == 422
+    big_subject = dict(SUBJECT, square_feet=1e12)
+    assert client.put("/api/cmas/%d/subject" % cma_id,
+                      json=big_subject).status_code == 422
+
+
+def test_subject_unknowns_never_guessed(client):
+    cma_id = create_cma(client, "Unknown subject")
+    response = client.put("/api/cmas/%d/subject" % cma_id,
+                          json={"address": "1 Mystery Manor"})
+    assert response.status_code == 200
+    subject = response.json()
+    assert subject["property_type"] is None
+    assert subject["has_pool"] is None

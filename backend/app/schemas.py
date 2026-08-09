@@ -79,22 +79,25 @@ class SubjectIn(BaseModel):
     zip_code: Optional[str] = Field(default=None, max_length=10)
     latitude: Optional[float] = Field(default=None, ge=-90, le=90)
     longitude: Optional[float] = Field(default=None, ge=-180, le=180)
-    property_type: str = "single_family"
+    # None = unknown; skipped in scoring/adjustments, never guessed.
+    property_type: Optional[str] = None
     bedrooms: Optional[int] = Field(default=None, ge=0, le=50)
     bathrooms: Optional[float] = Field(default=None, ge=0, le=50, allow_inf_nan=False)
-    square_feet: Optional[float] = Field(default=None, gt=0, allow_inf_nan=False)
-    lot_size: Optional[float] = Field(default=None, ge=0, allow_inf_nan=False)
+    square_feet: Optional[float] = Field(default=None, gt=0, le=1_000_000,
+                                         allow_inf_nan=False)
+    lot_size: Optional[float] = Field(default=None, ge=0, le=100_000_000,
+                                      allow_inf_nan=False)
     year_built: Optional[int] = Field(default=None, ge=1800, le=2100)
     condition: Optional[str] = None
     parking_spaces: Optional[int] = Field(default=None, ge=0, le=50)
-    has_pool: bool = False
+    has_pool: Optional[bool] = None
     renovation_notes: Optional[str] = None
     agent_notes: Optional[str] = None
 
     @field_validator("property_type")
     @classmethod
     def check_type(cls, v):
-        if v not in PROPERTY_TYPES:
+        if v is not None and v not in PROPERTY_TYPES:
             raise ValueError("property_type must be one of: %s" % ", ".join(PROPERTY_TYPES))
         return v
 
@@ -113,7 +116,7 @@ class SubjectOut(ORMModel):
     zip_code: Optional[str]
     latitude: Optional[float]
     longitude: Optional[float]
-    property_type: str
+    property_type: Optional[str]
     bedrooms: Optional[int]
     bathrooms: Optional[float]
     square_feet: Optional[float]
@@ -121,7 +124,7 @@ class SubjectOut(ORMModel):
     year_built: Optional[int]
     condition: Optional[str]
     parking_spaces: Optional[int]
-    has_pool: bool
+    has_pool: Optional[bool]
     renovation_notes: Optional[str]
     agent_notes: Optional[str]
 
@@ -389,9 +392,10 @@ class ConfigUpdate(BaseModel):
             _check_config_dict(v, DEFAULT_SIMILARITY_PARAMS, "similarity parameter")
             for key, value in v.items():
                 # Every parameter is a curve cap/tolerance used as a divisor.
-                if value <= 0:
+                if not 0 < value <= 1_000_000:
                     raise ValueError(
-                        "similarity parameter '%s' must be greater than zero" % key)
+                        "similarity parameter '%s' must be between 0 and 1,000,000"
+                        % key)
         return v
 
     @field_validator("assumptions")
@@ -406,10 +410,12 @@ class ConfigUpdate(BaseModel):
                     if not -1 <= value <= 1:
                         raise ValueError(
                             "monthly_market_pct must be between -1 and 1")
-                elif value < 0:
-                    # A negative dollar-per-unit value would silently reverse
-                    # the adjustment direction convention.
-                    raise ValueError("assumption '%s' cannot be negative" % key)
+                elif not 0 <= value <= 1_000_000_000:
+                    # Negative dollar-per-unit values would silently reverse
+                    # the adjustment direction; astronomically large ones can
+                    # overflow downstream sums into Infinity.
+                    raise ValueError(
+                        "assumption '%s' must be between 0 and 1,000,000,000" % key)
         return v
 
     @field_validator("reconciliation")

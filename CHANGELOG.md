@@ -2,6 +2,25 @@
 
 ## Unreleased
 
+- **Full calculation provenance** (2026-08-09):
+  - The suggestion-outdatedness check now fingerprints ALL inputs that shape
+    suggested amounts: assumptions, the subject's priced fields, and every
+    comparable's priced fields. Editing the subject's square footage, a comparable's sale price, or adding a
+    comparable now flags suggestions as outdated and blocks the report until
+    they are regenerated. (Previously only assumption changes were tracked.)
+  - Strategy generation and price edits return 409 while the latest
+    valuation is stale, closing the API path that priced strategies off
+    known-outdated numbers.
+  - Magnitude caps on assumptions (≤ $1B), similarity parameters (≤ 1M),
+    and subject living area/lot size, so extreme-but-finite values can no
+    longer overflow calculations into server errors.
+  - The subject property's type and pool are now "Not specified" by default
+    (stored as unknown) like the comparables; the report renders unknowns
+    as placeholders.
+  - Saving assumptions refreshes the header's outdated indicator
+    immediately.
+  - Documentation test counts corrected (117 backend / 35 frontend).
+
 - **Outdated-data visibility everywhere** (2026-08-09):
   - The dashboard shows an "outdated: recalculate" badge on any analysis
     whose value range no longer matches its inputs.
