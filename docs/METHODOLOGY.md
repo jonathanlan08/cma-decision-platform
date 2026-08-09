@@ -113,10 +113,16 @@ Rules:
   adjustment is re-flagged `manual`), or delete adjustments; each action is
   audit-logged. Re-running suggestion replaces only `suggested` rows.
 * Amounts are bounded to ±$1,000,000,000 so no sum can overflow.
-* **Provenance**: each suggestion run records the assumption set that produced
-  it. If the assumptions change afterwards, the stored suggested amounts are
-  flagged as outdated, the next valuation carries an `outdated_suggestions`
-  warning, and report generation is blocked until suggestions are regenerated.
+* **Provenance**: each suggestion run records a fingerprint of every input
+  that shaped the amounts: the assumption set, the subject's priced fields,
+  and each comparable's priced fields. If any of those change afterwards (a
+  resized subject, an edited sale price, a newly added comparable, a changed
+  assumption), the stored suggested amounts are flagged as outdated, the next
+  valuation carries an `outdated_suggestions` warning, and report generation
+  is blocked until suggestions are regenerated. The as-of date is deliberately
+  excluded from the fingerprint (its daily drift would flag every analysis
+  each morning); the `market_time` amount therefore reflects the day the
+  suggestions were generated.
 
 Then, per comparable:
 
@@ -180,9 +186,12 @@ fields (titles, notes, addresses) do not affect the fingerprint.
 Reports additionally require a complete chain (a valuation with a central
 estimate and generated strategies; 400 otherwise) and consistent provenance
 (no outdated suggestions; strategies stamped with the `valuation_id` they
-were derived from and no older than the latest valuation). A non-positive
-central estimate is reported honestly with a `nonpositive_estimate` warning
-but cannot produce strategies or a report.
+were derived from and no older than the latest valuation). Strategy
+generation and price edits are themselves refused (409) while the latest
+valuation is stale, so strategies can never be priced off numbers the system
+already knows are out of date. A non-positive central estimate is reported
+honestly with a `nonpositive_estimate` warning but cannot produce strategies
+or a report.
 
 Also reported: unweighted median adjusted value, weighted adjusted $/sq ft
 (over comps with valid sq ft, renormalized), included count, and per-comparable

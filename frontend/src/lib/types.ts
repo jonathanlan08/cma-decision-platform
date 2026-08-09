@@ -46,7 +46,8 @@ export interface Subject {
   zip_code: string | null;
   latitude: number | null;
   longitude: number | null;
-  property_type: string;
+  // null = unknown; skipped in scoring/adjustments, never guessed.
+  property_type: string | null;
   bedrooms: number | null;
   bathrooms: number | null;
   square_feet: number | null;
@@ -54,7 +55,7 @@ export interface Subject {
   year_built: number | null;
   condition: string | null;
   parking_spaces: number | null;
-  has_pool: boolean;
+  has_pool: boolean | null;
   renovation_notes: string | null;
   agent_notes: string | null;
 }

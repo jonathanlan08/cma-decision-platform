@@ -9,7 +9,7 @@ from ..models import ListingStrategy, utcnow
 from ..schemas import StrategyOut, StrategyUpdate
 from ..services.audit import log_event
 from ..services.strategies import derive_metrics, generate_default_strategies
-from .helpers import get_cma_or_404, latest_valuation, touch
+from .helpers import get_cma_or_404, latest_valuation, touch, valuation_staleness
 
 router = APIRouter(prefix="/api", tags=["Listing strategies"])
 
@@ -40,6 +40,13 @@ def generate_strategies(cma_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400,
                             detail="Calculate a valuation with a positive central "
                             "estimate before generating strategies")
+    # Strategies must never be priced off a valuation the system already
+    # knows is out of date with the current inputs.
+    if valuation_staleness(cma, valuation):
+        raise HTTPException(status_code=409,
+                            detail="The latest valuation is out of date with the "
+                            "current inputs. Recalculate the valuation before "
+                            "generating strategies.")
     central = valuation.central_estimate
     comp_values = _included_adjusted_values(valuation)
     existing = {s.key: s for s in cma.strategies}
@@ -87,6 +94,11 @@ def update_strategy(strategy_id: int, payload: StrategyUpdate, db: Session = Dep
     if valuation is None or valuation.central_estimate is None \
             or valuation.central_estimate <= 0:
         raise HTTPException(status_code=400, detail="No positive valuation available")
+    if valuation_staleness(cma, valuation):
+        raise HTTPException(status_code=409,
+                            detail="The latest valuation is out of date with the "
+                            "current inputs. Recalculate the valuation before "
+                            "editing strategy prices.")
     old_price = strategy.list_price
     strategy.list_price = payload.list_price
     strategy.is_user_modified = True

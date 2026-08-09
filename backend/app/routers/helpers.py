@@ -18,7 +18,7 @@ from ..models import (
 )
 from ..schemas import ComparableOut, ValuationOut
 from ..services.adjustments import adjusted_ppsf, adjusted_price, adjustment_percentages
-from ..services.fingerprint import valuation_fingerprint
+from ..services.fingerprint import suggestions_fingerprint, valuation_fingerprint
 from ..services.similarity import compute_similarity, resolve_distance_miles
 
 
@@ -118,19 +118,22 @@ def valuation_staleness(cma: CMAAnalysis, valuation) -> Optional[bool]:
 
 
 def suggestions_outdated(cma: CMAAnalysis, config) -> Optional[bool]:
-    """True when stored suggested adjustments were generated from an assumption
-    set that has since changed. Suggested amounts are DERIVED from assumptions,
-    so a mismatch means the derivation chain is broken even if the valuation's
-    own fingerprint is current. None when unknown (no snapshot recorded)."""
+    """True when stored suggested adjustments no longer follow from the data
+    on screen. Suggested amounts are DERIVED from the assumption set AND the
+    subject/comparable fields, so a change to any of those (a resized subject,
+    an edited sale price, a newly added comparable) breaks the derivation
+    chain even if the valuation's own fingerprint is current. None when
+    unknown (no snapshot recorded)."""
     has_suggested = any(
         adj.source == "suggested"
         for comp in cma.comparables for adj in comp.adjustments
     )
     if not has_suggested:
         return False
-    if config is None or config.suggestions_assumptions is None:
+    if config is None or config.suggestions_fingerprint is None:
         return None
-    return config.suggestions_assumptions != config.assumptions
+    return config.suggestions_fingerprint != suggestions_fingerprint(
+        cma, config.assumptions)
 
 
 def valuation_out(cma: CMAAnalysis, valuation) -> ValuationOut:

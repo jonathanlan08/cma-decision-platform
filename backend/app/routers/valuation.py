@@ -22,7 +22,7 @@ from ..services.adjustments import (
     suggest_adjustments,
 )
 from ..services.audit import log_event
-from ..services.fingerprint import valuation_fingerprint
+from ..services.fingerprint import suggestions_fingerprint, valuation_fingerprint
 from ..services.reconciliation import reconcile
 from ..services.sensitivity import sensitivity_analysis
 from .helpers import (
@@ -50,9 +50,11 @@ def suggest_all_adjustments(cma_id: int, db: Session = Depends(get_db)):
         raise HTTPException(status_code=400,
                             detail="Enter the subject property before suggesting adjustments")
     config = ensure_config(db, cma)
-    # Record which assumption set produced these suggestions so outdated
-    # suggested amounts can be detected later.
+    # Record the full input state that produced these suggestions: the
+    # assumption set (for audit visibility) and a fingerprint of assumptions +
+    # subject + comparable fields (the outdatedness authority).
     config.suggestions_assumptions = dict(config.assumptions)
+    config.suggestions_fingerprint = suggestions_fingerprint(cma, config.assumptions)
     total = 0
     for comp in cma.comparables:
         removed = [a for a in comp.adjustments if a.source == "suggested"]

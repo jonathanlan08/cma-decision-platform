@@ -22,7 +22,8 @@ const EMPTY: SubjectFormValues = {
   zip_code: "",
   latitude: null,
   longitude: null,
-  property_type: "single_family",
+  // Unknown until the user says otherwise; nothing is guessed.
+  property_type: null,
   bedrooms: null,
   bathrooms: null,
   square_feet: null,
@@ -30,7 +31,7 @@ const EMPTY: SubjectFormValues = {
   year_built: null,
   condition: null,
   parking_spaces: null,
-  has_pool: false,
+  has_pool: null,
   renovation_notes: "",
   agent_notes: "",
 };
@@ -137,9 +138,10 @@ export function SubjectForm({
         <Field id="subject-property_type" label="Property type">
           <select
             {...inputProps("property_type")}
-            value={values.property_type}
-            onChange={(e) => set("property_type", e.target.value)}
+            value={values.property_type ?? ""}
+            onChange={(e) => set("property_type", e.target.value || null)}
           >
+            <option value="">Not specified</option>
             {PROPERTY_TYPES.map((t) => (
               <option key={t} value={t}>
                 {t.replace(/_/g, " ")}
@@ -219,22 +221,19 @@ export function SubjectForm({
             onChange={(e) => set("parking_spaces", numeric(e.target.value))}
           />
         </Field>
-        <div className="flex items-end pb-1">
-          {/* Label wraps the checkbox so the whole padded row is tappable. */}
-          <label
-            htmlFor="subject-has_pool"
-            className="flex min-h-[44px] cursor-pointer items-center gap-2 py-2 text-sm"
+        <Field id="subject-has_pool" label="Pool">
+          <select
+            {...inputProps("has_pool")}
+            value={values.has_pool === null ? "" : String(values.has_pool)}
+            onChange={(e) =>
+              set("has_pool", e.target.value === "" ? null : e.target.value === "true")
+            }
           >
-            <input
-              id="subject-has_pool"
-              type="checkbox"
-              className="h-5 w-5 rounded border-slate-300"
-              checked={values.has_pool}
-              onChange={(e) => set("has_pool", e.target.checked)}
-            />
-            Has pool
-          </label>
-        </div>
+            <option value="">Not specified</option>
+            <option value="true">Yes</option>
+            <option value="false">No</option>
+          </select>
+        </Field>
         <Field
           id="subject-latitude"
           label="Latitude"

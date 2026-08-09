@@ -29,6 +29,15 @@ COMPARABLE_FIELDS = SUBJECT_FIELDS + [
     "sale_price", "sale_date", "distance_from_subject",
 ]
 
+# The inputs that shape SUGGESTED adjustment amounts specifically: the fields
+# suggest_adjustments() actually reads. Deliberately excludes the as-of date
+# (its daily drift would flag every analysis as outdated every morning).
+SUGGESTION_SUBJECT_FIELDS = [
+    "square_feet", "lot_size", "bedrooms", "bathrooms",
+    "condition", "parking_spaces", "has_pool",
+]
+SUGGESTION_COMPARABLE_FIELDS = SUGGESTION_SUBJECT_FIELDS + ["sale_price", "sale_date"]
+
 
 def _value(obj: Any, field: str):
     value = getattr(obj, field, None)
@@ -63,6 +72,28 @@ def valuation_fingerprint(cma: Any, config: Optional[Any]) -> str:
         "similarity_params": dict(config.similarity_params) if config else None,
         "assumptions": dict(config.assumptions) if config else None,
         "reconciliation": dict(config.reconciliation) if config else None,
+    }
+    canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def suggestions_fingerprint(cma: Any, assumptions: Any) -> str:
+    """SHA-256 over every input that shapes suggested adjustment amounts:
+    the assumption set, the subject's priced fields, and each comparable's
+    priced fields. Stored when suggestions are generated; a mismatch later
+    means the stored suggested amounts no longer follow from the data on
+    screen (e.g. the subject's square footage changed)."""
+    payload = {
+        "assumptions": dict(assumptions),
+        "subject": (
+            {f: _value(cma.subject, f) for f in SUGGESTION_SUBJECT_FIELDS}
+            if cma.subject is not None else None
+        ),
+        "comparables": [
+            {"id": comp.id,
+             **{f: _value(comp, f) for f in SUGGESTION_COMPARABLE_FIELDS}}
+            for comp in sorted(cma.comparables, key=lambda c: c.id)
+        ],
     }
     canonical = json.dumps(payload, sort_keys=True, separators=(",", ":"), default=str)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
