@@ -36,7 +36,4 @@ services:
       - key: NEXT_PUBLIC_API_BASE
         value: ""
       - key: DEMO_BACKEND_URL
-        fromService:
-          type: web
-          name: cma-decision-api
-          property: host
+        value: https://cma-decision-api.onrender.com
