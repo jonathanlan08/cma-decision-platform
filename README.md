@@ -3,6 +3,10 @@
 [![CI](https://github.com/jonathanlan08/cma-decision-platform/actions/workflows/ci.yml/badge.svg)](https://github.com/jonathanlan08/cma-decision-platform/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
 
+**[Live demo](https://cma-decision-demo.onrender.com)** — hosted on a free
+instance, so the first visit after an idle period takes ~30–60 seconds to wake
+up. The demo database resets itself periodically; all data is synthetic.
+
 A transparent Comparative Market Analysis (CMA) and listing-strategy platform for
 residential real-estate agents: every number is explainable, every override is
 audited, and nothing is a black box.
