@@ -1,0 +1,42 @@
+# Render blueprint for the hosted demo (free tier).
+#
+# Two services: the FastAPI backend and the Next.js frontend. The frontend is
+# built with NEXT_PUBLIC_API_BASE="" (same-origin requests) and proxies /api/*
+# to the backend via the rewrite in frontend/next.config.mjs.
+#
+# The database is SQLite on the instance's ephemeral disk: it is migrated and
+# reseeded with the synthetic demo data on every boot, so the demo resets
+# itself whenever the free instance restarts or wakes from sleep. Nothing
+# entered by visitors persists, which is intentional for a public demo of an
+# app that (by design, see README) ships without authentication.
+services:
+  - type: web
+    name: cma-decision-api
+    runtime: python
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: alembic upgrade head && python -m app.seed && uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.9
+      - key: CORS_ORIGINS
+        value: https://cma-decision-demo.onrender.com
+
+  - type: web
+    name: cma-decision-demo
+    runtime: node
+    plan: free
+    rootDir: frontend
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NEXT_PUBLIC_API_BASE
+        value: ""
+      - key: DEMO_BACKEND_URL
+        fromService:
+          type: web
+          name: cma-decision-api
+          property: host
